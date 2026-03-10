@@ -65,6 +65,13 @@
         "repo": "lamtuanvu/VectCutAPI"
       },
       "keywords": ["capcut", "jianying", "video-editing", "mcp", "video"]
+    },
+    {
+      "name": "mobile-development",
+      "version": "1.0.0",
+      "description": "Mobile development toolkit: device automation (iOS/Android simulators) and video analysis with Gemini AI",
+      "source": "./plugins/mobile-development",
+      "keywords": ["mobile", "ios", "android", "simulator", "device-automation", "video-analysis", "gemini"]
     }
   ],
   "categories": [
