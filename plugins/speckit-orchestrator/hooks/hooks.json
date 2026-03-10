@@ -1,5 +1,4 @@
 {
-  "description": "SpecKit Orchestrator stop hook for automatic pipeline continuation",
   "hooks": {
     "Stop": [
       {

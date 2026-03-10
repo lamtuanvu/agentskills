@@ -52,6 +52,11 @@ Mark each task as: **Done**, **Partial**, or **Missing**
 - Are error paths tested?
 - Are edge cases tested?
 - Are there obvious gaps in test coverage?
+- **Unit tests:** Do they cover all modules/components from the plan?
+- **Integration tests:** Do they cover service interactions and API contracts?
+- **E2E backend tests:** Do they cover full request lifecycles and data pipelines?
+- **E2E frontend tests:** Do they cover complete user journeys and critical paths?
+- Are there test categories missing entirely (e.g., no e2e tests written)?
 
 ### Integration Points
 - Do components integrate correctly (API contracts, data flow)?
@@ -108,6 +113,16 @@ Write your findings to `specs/<feature>/reviews/qa.md` using this format:
 
 ## Test Coverage Assessment
 
+### By Category
+
+| Category | Files | Tests | Gaps |
+|----------|-------|-------|------|
+| Unit Tests | X files | X tests | <missing areas> |
+| Integration Tests | X files | X tests | <missing areas> |
+| E2E Backend | X files | X tests | <missing areas> |
+| E2E Frontend | X files | X tests | <missing areas> |
+
+### Coverage Analysis
 <Findings about test quality and gaps>
 
 ## Previous Review Follow-up

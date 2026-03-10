@@ -1,6 +1,6 @@
 ---
 description: "Execute the next step in the SpecKit pipeline (specify->clarify->plan->plan-review->tasks->analyze->implement). Supports agent-teams for parallel plan review and implementation. Assumes idea.md exists."
-allowed-tools: ["Bash(python *orchestrator.py*)", "Bash(python *partition_tasks.py*)", "Bash(*check_teams.sh*)", "Read(docs/features/*/orchestrator-state.json)", "Read(docs/features/*/idea.md)", "Read(specs/*/spec.md)", "Read(specs/*/plan.md)", "Read(specs/*/tasks.md)"]
+allowed-tools: ["Bash(python *orchestrator.py*)", "Bash(python *partition_tasks.py*)", "Read(docs/features/*/orchestrator-state.json)", "Read(docs/features/*/idea.md)", "Read(specs/*/spec.md)", "Read(specs/*/plan.md)", "Read(specs/*/tasks.md)"]
 ---
 
 # SpecKit Orchestrator — Execute
@@ -21,7 +21,7 @@ specify → clarify → plan → [plan-review] → tasks → analyze → impleme
 - `docs/features/<feature>/idea.md` exists with the approved plan
 - `docs/features/<feature>/orchestrator-state.json` exists
 
-**The stop hook handles auto-continuation.** After each step, the hook reads `orchestrator-state.json` and feeds `/speckit-orchestrator:execute` to run the next step. It only allows stop when a step fails, the pipeline completes, or the pipeline is paused.
+**The stop hook handles auto-continuation.** After each step, the hook reads `orchestrator-state.json` and feeds `/speckit-orchestrator:execute` to run the next step. It only allows stop when a step fails, the pipeline completes, the pipeline is paused, or a **human-in-the-loop** step just completed (currently: `clarify`). After `clarify` completes, the pipeline pauses so the user can review clarification results before continuing to `plan`.
 
 **Agent Teams** (optional): When enabled, `plan-review` and `implement` steps use multi-agent teams for parallel work. Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Falls back to sequential when unavailable.
 
@@ -40,15 +40,15 @@ Use this when:
 
 Each execute call runs the next step. The stop hook auto-continues on success:
 
-| Step | Command | Purpose | Team? |
-|------|---------|---------|-------|
-| 1 | `/speckit.specify` | Generate spec.md from idea.md | No |
-| 2 | `/speckit.clarify` | Resolve ambiguities (may skip) | No |
-| 3 | `/speckit.plan` | Generate implementation plan | No |
-| 4 | Team phase | Parallel specialist plan reviews | Yes |
-| 5 | `/speckit.tasks` | Generate tasks.md | No |
-| 6 | `/speckit.analyze` | Check consistency | No |
-| 7 | `/speckit.implement` | Execute tasks (parallel if teams) | Yes |
+| Step | Command | Purpose | Team? | Pauses? |
+|------|---------|---------|-------|---------|
+| 1 | `/speckit.specify` | Generate spec.md from idea.md | No | No |
+| 2 | `/speckit.clarify` | Resolve ambiguities (may skip) | No | Yes — human review |
+| 3 | `/speckit.plan` | Generate implementation plan | No | No |
+| 4 | Team phase | Parallel specialist plan reviews | Yes | No |
+| 5 | `/speckit.tasks` | Generate tasks.md | No | No |
+| 6 | `/speckit.analyze` | Check consistency | No | No |
+| 7 | `/speckit.implement` | Execute tasks (parallel if teams) | Yes | No |
 
 Steps marked "Team?" use agent teams when `teams_enabled` is true. When false, step 4 is skipped and step 7 runs sequentially.
 
@@ -85,6 +85,40 @@ Do not add features beyond what idea.md specifies.
 All work must align with the approved plan.
 ```
 
+**Additional context for the `plan` step:**
+
+```
+The plan MUST include a detailed testing section covering:
+- Unit tests for each module/component
+- Integration tests for API endpoints and service interactions
+- E2E tests for backend (full request lifecycles, data pipelines)
+- E2E tests for frontend (complete user journeys, critical paths)
+The testing section should specify test frameworks, file locations,
+and concrete test scenarios for each category.
+```
+
+### Analyze Resolution Flow (needs_resolve)
+
+When `/speckit-orchestrator:execute` detects the `analyze` step with status `needs_resolve`:
+
+1. **Do NOT run `/speckit.analyze` fresh.** Instead:
+   - Read the existing analysis output to identify HIGH/must-fix findings
+   - Apply concrete edits to the artifacts (`plan.md`, `tasks.md`, `spec.md`, etc.) to resolve the findings
+   - Re-run `/speckit.analyze` to verify the fixes addressed all issues
+
+2. **After re-analysis:**
+   - If re-analysis finds **no HIGH/must-fix findings** → set `analyze: "completed"`, advance `current_step` to `implement`
+   - If re-analysis **still has HIGH findings** → keep `analyze: "needs_resolve"` with `current_step: "analyze"` (stop hook will loop back)
+
+### Analyze Step Completion Logic
+
+When running `/speckit.analyze` for the **first time** (status was `pending` or `in_progress`):
+
+- If analysis finds **no HIGH/must-fix findings** → set `analyze: "completed"`, advance normally
+- If analysis finds **HIGH findings that need artifact fixes** → set `analyze: "needs_resolve"` with `current_step: "analyze"` (do NOT advance to implement)
+
+The stop hook will detect `needs_resolve` and auto-feed `/speckit-orchestrator:execute`, which will then guide the agent through the resolution flow above.
+
 ### After Each Step (Critical for Stop Hook)
 
 **You MUST update `orchestrator-state.json` before finishing:**
@@ -115,6 +149,10 @@ Fix the issue, then run:
 
 ### After All Steps Complete
 
+The orchestrator auto-archives the state file (`orchestrator-state.json` → `orchestrator-state.completed.json`) so the stop hook no longer triggers for this feature.
+
+**Before displaying completion**, read the test report at `specs/<feature>/reports/test-report.md` and include its summary.
+
 Display:
 ```
 ══════════════════════════════════════════════════════════════
@@ -125,6 +163,16 @@ Display:
  [✓] Tasks     →  [✓] Analyze      →  [✓] Implement ⚡
 
 Feature <feature-name> is fully implemented.
+State archived → orchestrator-state.completed.json
+
+── Test Report Summary ──────────────────────────────────────
+ Total: XX tests | Passed: XX | Failed: XX | Skipped: XX
+ Unit:        XX passed / XX total
+ Integration: XX passed / XX total
+ E2E Backend: XX passed / XX total
+ E2E Frontend:XX passed / XX total
+
+ Full report: specs/<feature>/reports/test-report.md
 ══════════════════════════════════════════════════════════════
 ```
 
@@ -136,8 +184,7 @@ Feature <feature-name> is fully implemented.
 
 Before running a team step, check:
 1. Is `teams_enabled` true in state?
-2. Run `scripts/check_teams.sh` to verify agent-teams is available
-3. If either fails → set `teams_enabled: false`, skip `plan-review`, run `implement` sequentially
+2. If not → skip `plan-review`, run `implement` sequentially
 
 ### Plan Review Team Phase (Step 4)
 
@@ -227,9 +274,116 @@ Before running a team step, check:
 6. **After QA:**
    - Read `specs/<feature>/reviews/qa.md`
    - If FAIL → pause pipeline for user review
-   - If PASS → continue to completion
+   - If PASS → continue to test report generation
 
-7. **Teardown:** Same as plan-review team
+7. **Generate Test Report:**
+   - Run the full test suite (detect and use the project's test runner)
+   - Write a detailed report to `specs/<feature>/reports/test-report.md`
+   - See **Test Report Format** section below for the required format
+   - If tests fail → include failures in the report, pause for user review
+   - If all tests pass → continue to completion
+
+8. **Teardown:** Same as plan-review team
+
+---
+
+## Test Report Format
+
+After implementation and QA, the lead runs the full test suite and writes a detailed report to `specs/<feature>/reports/test-report.md`.
+
+**The lead must:**
+1. Detect the project's test runner (Jest, Vitest, pytest, etc.)
+2. Run all tests (unit, integration, e2e)
+3. Collect results and write the report
+
+**Report template:**
+
+```markdown
+# Test Report
+
+**Feature:** <feature-name>
+**Date:** <ISO8601>
+**Test Runner:** <framework and version>
+
+## Summary
+
+| Category | Total | Passed | Failed | Skipped |
+|----------|-------|--------|--------|---------|
+| Unit Tests | X | X | X | X |
+| Integration Tests | X | X | X | X |
+| E2E Tests — Backend | X | X | X | X |
+| E2E Tests — Frontend | X | X | X | X |
+| **Total** | **X** | **X** | **X** | **X** |
+
+**Overall Status:** PASS / FAIL
+
+## Test Coverage
+
+| Module/Component | Lines | Branches | Functions | Statements |
+|------------------|-------|----------|-----------|------------|
+| <module> | X% | X% | X% | X% |
+| ... | ... | ... | ... | ... |
+| **Overall** | **X%** | **X%** | **X%** | **X%** |
+
+*Coverage collected with: <tool> (if available)*
+
+## Unit Tests
+
+| Test File | Tests | Passed | Failed | Duration |
+|-----------|-------|--------|--------|----------|
+| <file> | X | X | X | Xs |
+| ... | ... | ... | ... | ... |
+
+### Failed Unit Tests
+- **<test name>** in `<file>`: <error message>
+
+## Integration Tests
+
+| Test File | Tests | Passed | Failed | Duration |
+|-----------|-------|--------|--------|----------|
+| <file> | X | X | X | Xs |
+| ... | ... | ... | ... | ... |
+
+### Failed Integration Tests
+- **<test name>** in `<file>`: <error message>
+
+## E2E Tests — Backend
+
+| Test File | Tests | Passed | Failed | Duration |
+|-----------|-------|--------|--------|----------|
+| <file> | X | X | X | Xs |
+| ... | ... | ... | ... | ... |
+
+### Failed E2E Backend Tests
+- **<test name>** in `<file>`: <error message>
+
+## E2E Tests — Frontend
+
+| Test File | Tests | Passed | Failed | Duration |
+|-----------|-------|--------|--------|----------|
+| <file> | X | X | X | Xs |
+| ... | ... | ... | ... | ... |
+
+### Failed E2E Frontend Tests
+- **<test name>** in `<file>`: <error message>
+
+## What Was Tested
+
+### Covered Scenarios
+- <scenario 1> — <which tests cover it>
+- <scenario 2> — <which tests cover it>
+
+### Not Covered (Gaps)
+- <gap 1> — <reason>
+- <gap 2> — <reason>
+
+## Notes
+- <any observations about test quality, flaky tests, etc.>
+```
+
+**If the project has no test runner configured**, note this in the report and list what test files were created, what they would test, and instructions for running them manually.
+
+**If coverage tooling is not available**, omit the coverage table and note it as unavailable.
 
 ---
 
@@ -302,6 +456,7 @@ During team phases, also update `team_state` with teammate progress.
 - `[✓]` Completed
 - `[−]` Skipped
 - `[▶]` In Progress
+- `[!]` Needs Resolve (has fixable findings)
 - `[ ]` Pending
 - `⚡` Team step (parallel agents)
 

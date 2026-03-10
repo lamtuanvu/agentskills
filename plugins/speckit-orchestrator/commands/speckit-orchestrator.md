@@ -19,6 +19,7 @@ specify → clarify → plan → [plan-review] → tasks → analyze → impleme
 | `/speckit-orchestrator:rollback <step>` | Reset pipeline to a specific step |
 | `/speckit-orchestrator:brainstorm <description>` | Brainstorm and plan a new feature |
 | `/speckit-orchestrator:cancel-pipeline` | Pause the pipeline |
+| `/speckit-orchestrator:complete` | Archive state after pipeline completion |
 
 ## Quick Start
 

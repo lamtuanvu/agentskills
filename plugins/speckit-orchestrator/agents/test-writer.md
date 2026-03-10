@@ -44,12 +44,28 @@ For workflows that span multiple components:
 2. Add `// TODO: implement after integration points are ready` for parts that depend on implementation details
 3. Test the contract/interface, not the implementation
 
+### Phase 4: Write E2E Tests — Backend
+For backend API workflows and data pipelines:
+1. Test full request lifecycles (request → processing → response → side effects)
+2. Test multi-step API workflows (e.g., create → update → fetch → delete)
+3. Test data flow end-to-end (input → transformation → storage → retrieval)
+4. Test authentication/authorization flows if applicable
+5. Use the project's e2e test conventions (or create an `e2e/` directory)
+
+### Phase 5: Write E2E Tests — Frontend
+For user-facing flows and critical paths:
+1. Test complete user journeys (e.g., signup → onboarding → first action)
+2. Test critical paths that must not break (e.g., checkout, authentication)
+3. Test cross-component interactions (e.g., form submission → confirmation → state update)
+4. Use the project's e2e framework (Playwright, Cypress, etc.) or create skeletons with setup instructions
+5. For frontend e2e, prefer skeletons with clear setup comments if the framework isn't yet configured
+
 ## File Ownership (Strict)
 
 You may ONLY write to files matching these patterns:
 - `*.test.*` (e.g., `auth.test.ts`, `login.test.js`)
 - `*.spec.*` (e.g., `auth.spec.ts`)
-- Files inside `tests/` or `__tests__/` directories
+- Files inside `tests/`, `__tests__/`, or `e2e/` directories
 - Test fixtures/helpers inside test directories
 
 **You must NOT write to:**
@@ -86,10 +102,15 @@ describe('<ComponentOrFunction>', () => {
 ## Completion
 
 After writing all tests:
-1. List all test files created
+1. List all test files created, organized by category:
+   - Unit tests
+   - Integration tests
+   - E2E tests — backend
+   - E2E tests — frontend
 2. Note any tests that are skeletons/TODO (pending implementation details)
 3. Note any spec requirements that couldn't be tested (and why)
-4. Mark your task as completed
+4. Note any e2e frameworks that need to be installed/configured
+5. Mark your task as completed
 
 ## Rules
 
@@ -99,3 +120,5 @@ After writing all tests:
 4. If no existing tests found, use the most common framework for the project's language
 5. Don't over-test — focus on behavior specified in spec.md and tasks.md
 6. Integration test skeletons are acceptable; unit tests should be complete
+7. E2E tests should cover the critical paths defined in idea.md and plan.md
+8. Frontend e2e skeletons are acceptable if the e2e framework isn't yet configured

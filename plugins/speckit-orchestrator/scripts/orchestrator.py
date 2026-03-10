@@ -17,6 +17,7 @@ Usage:
     python orchestrator.py execute                   Run next step
     python orchestrator.py status [feature]          Show progress
     python orchestrator.py rollback <step>           Reset to step
+    python orchestrator.py complete [--force]        Archive state after completion
     python orchestrator.py team-status               Show team status
 """
 
@@ -47,6 +48,7 @@ class StepStatus(Enum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     SKIPPED = "skipped"
+    NEEDS_RESOLVE = "needs_resolve"
 
 
 @dataclass
@@ -128,7 +130,7 @@ class OrchestratorState:
             if step == Step.PLAN_REVIEW and not self.teams_enabled:
                 continue
             status = StepStatus(self.step_status.get(step.value, 'pending'))
-            if status in [StepStatus.PENDING, StepStatus.IN_PROGRESS]:
+            if status in [StepStatus.PENDING, StepStatus.IN_PROGRESS, StepStatus.NEEDS_RESOLVE]:
                 return step
         return None
 
@@ -182,7 +184,13 @@ def extract_feature_from_branch(branch: str) -> Optional[str]:
 
 
 def find_state_file(base_dir: str) -> Tuple[Optional[str], Optional[str]]:
-    """Find state file from current branch."""
+    """Find state file from current branch.
+
+    First tries the fast path (derive feature dir from branch name),
+    then falls back to scanning all state files for a matching branch_name field.
+    This handles cases where the branch name doesn't match the feature directory
+    (e.g., branch '406-pr5-core-storage' but feature dir 'extract-core-storage').
+    """
     branch = get_current_branch()
     if not branch:
         return None, None
@@ -191,9 +199,24 @@ def find_state_file(base_dir: str) -> Tuple[Optional[str], Optional[str]]:
     if not feature:
         return None, None
 
+    # Fast path: direct match
     state_file = os.path.join(base_dir, "docs", "features", feature, "orchestrator-state.json")
     if os.path.exists(state_file):
         return state_file, feature
+
+    # Fallback: scan all state files for matching branch_name
+    features_dir = os.path.join(base_dir, "docs", "features")
+    if os.path.isdir(features_dir):
+        for entry in os.listdir(features_dir):
+            candidate = os.path.join(features_dir, entry, "orchestrator-state.json")
+            if os.path.exists(candidate):
+                try:
+                    with open(candidate, 'r') as f:
+                        data = json.load(f)
+                    if data.get('branch_name') == branch:
+                        return candidate, data.get('feature_name', entry)
+                except (json.JSONDecodeError, OSError):
+                    continue
 
     return None, feature
 
@@ -220,6 +243,8 @@ def print_progress(state: OrchestratorState) -> None:
             symbols.append(f"[−] {label}")
         elif status == StepStatus.IN_PROGRESS:
             symbols.append(f"[▶] {label}")
+        elif status == StepStatus.NEEDS_RESOLVE:
+            symbols.append(f"[!] {label}")
         else:
             symbols.append(f"[ ] {label}")
 
@@ -358,6 +383,11 @@ def cmd_execute(args):
     if not next_step:
         print("✅ All steps complete!")
         print_progress(state)
+
+        # Auto-archive: rename state file so the stop hook no longer triggers
+        completed_file = state_file.replace("orchestrator-state.json", "orchestrator-state.completed.json")
+        os.rename(state_file, completed_file)
+        print(f"\n✓ State archived: {completed_file}")
         return
 
     print("╔" + "═" * 68 + "╗")
@@ -479,6 +509,33 @@ def cmd_cancel(args):
     print_progress(state)
 
 
+def cmd_complete(args):
+    """Archive state file after pipeline completion."""
+    base_dir = os.getcwd()
+
+    state_file, feature = find_state_file(base_dir)
+    if not state_file:
+        print("Error: No state file found. Nothing to complete.")
+        sys.exit(1)
+
+    state = OrchestratorState.load(state_file)
+    next_step = state.get_next_step()
+
+    if next_step and not getattr(args, 'force', False):
+        print(f"Error: Pipeline is not complete. Next step: {next_step.value}")
+        print("Use --force to archive anyway.")
+        sys.exit(1)
+
+    # Rename to .completed.json
+    completed_file = state_file.replace("orchestrator-state.json", "orchestrator-state.completed.json")
+    os.rename(state_file, completed_file)
+
+    print(f"✓ Pipeline archived: {completed_file}")
+    print(f"  Feature: {feature}")
+    print(f"  The stop hook will no longer trigger for this feature.")
+    print_progress(state)
+
+
 def cmd_team_status(args):
     """Show detailed team status."""
     base_dir = os.getcwd()
@@ -567,6 +624,12 @@ def main():
     # Cancel (pause pipeline)
     cancel_p = subparsers.add_parser("cancel", help="Pause pipeline")
     cancel_p.set_defaults(func=cmd_cancel)
+
+    # Complete (archive state)
+    complete_p = subparsers.add_parser("complete", help="Archive state after pipeline completion")
+    complete_p.add_argument("--force", action="store_true",
+                            help="Archive even if pipeline is not fully complete")
+    complete_p.set_defaults(func=cmd_complete)
 
     # Team status
     team_p = subparsers.add_parser("team-status", help="Show team status")

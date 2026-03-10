@@ -86,9 +86,22 @@ Explicitly excluded from this feature:
 
 [How will this feature be tested?]
 
-- Unit tests for: [components]
-- Integration tests for: [flows]
-- Manual testing: [scenarios]
+### Unit Tests
+- [component/module] — [what behaviors to test]
+
+### Integration Tests
+- [flow/API endpoint] — [what interactions to verify]
+
+### E2E Tests — Backend
+- [API workflow] — [full request lifecycle to verify]
+- [data pipeline] — [end-to-end data flow to validate]
+
+### E2E Tests — Frontend
+- [user flow] — [complete user journey to test]
+- [critical path] — [key interaction sequence to verify]
+
+### Manual Testing
+- [scenario] — [what to verify manually]
 
 ## Open Questions
 

@@ -9,15 +9,11 @@ argument-hint: "<feature-description>"
 
 This command facilitates feature brainstorming by analyzing the proposed feature from multiple angles simultaneously. Four specialist analysts — UX, architecture, feasibility, and devil's advocate — explore the codebase and challenge the idea in parallel, then the lead synthesizes their findings into a comprehensive `idea.md`.
 
-**Two execution modes:**
-- **Agent Teams** (preferred): when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set, spawns a full team with shared task list and inter-agent messaging
-- **Subagent Fallback**: when agent teams are unavailable, spawns 4 parallel subagents via the `Task` tool and collects their reports
-
-Both modes produce identical output. The analysis quality is the same; only the coordination mechanism differs.
+Uses agent teams to spawn a full team with shared task list and inter-agent messaging.
 
 **Output**: `docs/features/<feature>/idea.md` + `orchestrator-state.json` + git branch
 
-**Next Step**: After all artifacts are created, automatically continue into `/speckit-orchestrator:execute` to start the pipeline.
+**Next Step**: After all artifacts are created, the user manually starts the pipeline with `/speckit-orchestrator:execute`.
 
 ## CRITICAL: This Command Produces idea.md ONLY
 
@@ -40,29 +36,7 @@ Extract feature info:
 - Feature name (kebab-case): e.g., `dark-mode-toggle`
 - Sequence number: auto-determined (see Step 5.1)
 
-### Step 2: Detect Agent Teams Availability
-
-Run the detection script:
-```bash
-plugins/speckit-orchestrator/scripts/check_teams.sh
-```
-
-- **Exit code 0** → agent teams available → follow **Path A: Agent Teams**
-- **Exit code 1** → agent teams unavailable → follow **Path B: Subagent Fallback**
-
-Display which mode is being used:
-```
-🔍 Agent teams: [available|not available]
-📋 Using: [agent team|parallel subagents] for multi-angle analysis
-```
-
----
-
-## Path A: Agent Teams
-
-Use this path when `check_teams.sh` exits with code 0.
-
-### A.1: Create the Brainstorm Team
+### Step 2: Create the Brainstorm Team
 
 1. **Create the team:**
    ```
@@ -78,7 +52,7 @@ Use this path when `check_teams.sh` exits with code 0.
    | Feasibility analysis | `feasibility-analyst` | Analyze feature for technical feasibility and risks |
    | Devil's advocate | `devils-advocate` | Challenge assumptions and find weaknesses |
 
-### A.2: Spawn Teammates
+### Step 2.1: Spawn Teammates
 
 Spawn all 4 teammates in parallel using the `Task` tool with `team_name` set to your team. Each teammate gets:
 
@@ -110,7 +84,7 @@ When done, send your full report to the team lead and mark your task as complete
 
 Assign each teammate their corresponding task via `TaskUpdate`.
 
-### A.3: Monitor and Coordinate
+### Step 2.2: Monitor and Coordinate
 
 While teammates work:
 
@@ -123,11 +97,11 @@ If a teammate gets stuck or fails:
 - Send them a message with guidance
 - If unrecoverable, note the gap and proceed with the remaining analyses
 
-### A.4: Collect Reports
+### Step 2.3: Collect Reports
 
 Teammates send their reports via messages to the lead. Collect all 4 reports and proceed to **Step 3: Synthesize into idea.md Draft**.
 
-### A.5: Shut Down the Team
+### Step 2.4: Shut Down the Team
 
 After collecting all reports:
 
@@ -137,55 +111,9 @@ After collecting all reports:
 
 Then proceed to **Step 3: Synthesize into idea.md Draft**.
 
----
-
-## Path B: Subagent Fallback
-
-Use this path when `check_teams.sh` exits with code 1 (agent teams unavailable).
-
-### B.1: Launch 4 Parallel Subagents
-
-Spawn all 4 analysts simultaneously using the `Task` tool (NOT as a team — just parallel subagent calls). Launch all 4 in a **single message** so they run concurrently:
-
-**Subagent prompt template** (customize per role):
-```
-You are the [role] analyst for a feature brainstorm.
-
-Feature under analysis: "<feature-description>"
-
-Read your agent instructions at plugins/speckit-orchestrator/agents/[agent-file].md,
-then explore the codebase to understand the current state.
-
-Analyze this feature from your specialist perspective.
-
-Return your FULL analysis report as your final output. Use the report format
-described in your agent instructions.
-```
-
-**Subagents to launch (all in parallel):**
-
-| Description | Agent file | Subagent type |
-|-------------|-----------|---------------|
-| `UX analysis` | `agents/ux-analyst.md` | `Explore` |
-| `Architecture analysis` | `agents/architect.md` | `Explore` |
-| `Feasibility analysis` | `agents/feasibility-analyst.md` | `Explore` |
-| `Devil's advocate` | `agents/devils-advocate.md` | `Explore` |
-
-Use subagent_type `Explore` since these are read-only analysis tasks — no file editing needed.
-
-### B.2: Collect Reports
-
-Each subagent returns its report directly as the tool result. Collect all 4 reports. If any subagent fails, note the gap and proceed with the available reports.
-
-Then proceed to **Step 3: Synthesize into idea.md Draft**.
-
----
-
-## Common Steps (Both Paths)
-
 ### Step 3: Synthesize into idea.md Draft
 
-Once all analyst reports are collected (from either Path A or Path B), synthesize their findings into a unified `idea.md` draft.
+Once all analyst reports are collected, synthesize their findings into a unified `idea.md` draft.
 
 Read all reports and combine them:
 - **UX analyst** → informs User Stories, UI/UX section, and relevant requirements
@@ -241,8 +169,18 @@ Read all reports and combine them:
 - <external dependency or prerequisite>
 
 ## Testing Strategy
-- Unit tests for: <components>
-- Integration tests for: <flows>
+
+### Unit Tests
+- <component/module> — <what behaviors to test>
+
+### Integration Tests
+- <flow/API endpoint> — <what interactions to verify>
+
+### E2E Tests — Backend
+- <API workflow> — <full request lifecycle to verify>
+
+### E2E Tests — Frontend
+- <user flow> — <complete user journey to test>
 
 ## Risks & Mitigations
 - <Risk 1> — <Mitigation>
@@ -348,7 +286,7 @@ Read back the state file and confirm:
 - All 7 steps are present and `"pending"`
 - `idea_file` path matches the idea.md you wrote
 
-### Step 6: Report and Continue to Pipeline
+### Step 6: Report and Wait for User
 
 After all artifacts are created, display:
 
@@ -373,19 +311,16 @@ Pipeline: specify → clarify → plan → plan-review → tasks → analyze →
           ^
      Starting here
 
-Continuing to SpecKit pipeline...
+To start the pipeline:
+  /speckit-orchestrator:execute
 ══════════════════════════════════════════════════════════════
 ```
 
-Then **automatically invoke `/speckit-orchestrator:execute`** to begin the pipeline.
+**Do NOT automatically invoke `/speckit-orchestrator:execute`.** The user must review the artifacts and decide when to start the pipeline. This is a human-in-the-loop checkpoint.
 
 If any artifact creation step **failed**, STOP and wait for the user to resolve it.
 
 ## Critical Rules
-
-### DETECT AND ADAPT
-
-**Always check `check_teams.sh` before choosing a path.** Use agent teams when available for richer collaboration; fall back to subagents seamlessly when not. Both paths must produce the same quality output.
 
 ### NO PLAN MODE
 
@@ -415,16 +350,18 @@ The SpecKit pipeline handles everything after `idea.md` is created.
 - The user returns in edit mode and explicitly asks to write — that is the approval
 - If the user asks for changes first, revise the draft and present again with the guide
 
-### AUTO-CONTINUE TO PIPELINE
+### DO NOT AUTO-CONTINUE TO PIPELINE
 
 After artifacts are created:
-- All steps passed → invoke `/speckit-orchestrator:execute` (starts with `specify`)
+- All steps passed → STOP and display the command for the user to start the pipeline
 - Any step failed → STOP, display failure, wait for user
+- DO NOT automatically invoke `/speckit-orchestrator:execute`
 - DO NOT skip the pipeline and jump to implementation
+- The user must explicitly start the pipeline when ready
 
-### CLEAN UP (Agent Teams Path Only)
+### CLEAN UP
 
-**Always shut down teammates and delete the team** before creating artifacts. The brainstorm team is temporary — it exists only for the analysis phase. This does not apply to the subagent fallback path (subagents clean up automatically).
+**Always shut down teammates and delete the team** before creating artifacts. The brainstorm team is temporary — it exists only for the analysis phase.
 
 ## Plan Mode Exit Guide
 
@@ -469,7 +406,6 @@ SpecKit pipeline.
 - `devils-advocate.md` — Assumption challenger agent
 
 ### scripts/
-- `check_teams.sh` — Detect agent-teams availability
 - `init_feature.py` — Initialize orchestrator-state.json for a feature
 
 ### references/

@@ -56,6 +56,13 @@ Clarifications must stay within idea.md scope.
 ```
 Implementation plan MUST align with idea.md.
 Technical decisions in idea.md take precedence.
+The plan MUST include a detailed testing section covering:
+- Unit tests for each module/component
+- Integration tests for API endpoints and service interactions
+- E2E tests for backend (full request lifecycles, data pipelines)
+- E2E tests for frontend (complete user journeys, critical paths)
+The testing section should specify test frameworks, file locations,
+and concrete test scenarios for each category.
 ```
 
 **Output:** `specs/<feature>/plan.md`, `research.md`, `data-model.md`, etc.
@@ -110,6 +117,15 @@ Flag scope drift as error.
 
 **Output:** Analysis report, may update artifacts
 
+**Resolution Flow:**
+When analyze finds HIGH/must-fix findings:
+1. Set `analyze: "needs_resolve"` (do NOT advance to implement)
+2. Stop hook auto-feeds `/speckit-orchestrator:execute`
+3. Execute detects `needs_resolve` → instructs agent to apply artifact fixes
+4. Agent applies fixes, then re-runs `/speckit.analyze`
+5. If clean → `analyze: "completed"`, advance to implement
+6. If still has issues → stays `needs_resolve` (loops)
+
 ---
 
 ### Step 7: Implement (Team Phase when enabled)
@@ -130,6 +146,8 @@ HALT if scope change is required.
 ```
 
 **Output:** Implemented code + tests
+
+**After implementation and QA:** Run the full test suite and generate a test report at `specs/<feature>/reports/test-report.md` before marking implement as complete. See execute.md for the test report format.
 
 ---
 
@@ -154,7 +172,7 @@ docs/features/<feature>/orchestrator-state.json
     "plan": "pending|in_progress|completed|skipped",
     "plan-review": "pending|in_progress|completed|skipped",
     "tasks": "pending|in_progress|completed|skipped",
-    "analyze": "pending|in_progress|completed|skipped",
+    "analyze": "pending|in_progress|completed|skipped|needs_resolve",
     "implement": "pending|in_progress|completed|skipped"
   },
   "started_at": "ISO8601",
@@ -222,8 +240,6 @@ python orchestrator.py rollback <step>
 # Partition tasks for parallel implementation
 python partition_tasks.py specs/<feature>/tasks.md
 
-# Check team availability
-./check_teams.sh
 ```
 
 ---
@@ -278,6 +294,7 @@ Each `/speckit-orchestrator:execute` call:
 - `[✓]` Completed
 - `[−]` Skipped
 - `[▶]` In Progress
+- `[!]` Needs Resolve
 - `[ ]` Pending
 - `⚡` Team step (parallel agents)
 

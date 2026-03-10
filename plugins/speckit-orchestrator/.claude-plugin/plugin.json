@@ -1,6 +1,6 @@
 {
   "name": "speckit-orchestrator",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "SpecKit pipeline orchestrator — brainstorm features, execute the specify→clarify→plan→plan-review→tasks→analyze→implement pipeline with agent-teams support for parallel specialist reviews and parallel implementation.",
   "author": {
     "name": "lamtuanvu",
