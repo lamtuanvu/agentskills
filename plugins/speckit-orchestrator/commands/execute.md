@@ -1,6 +1,6 @@
 ---
 description: "Execute the next step in the SpecKit pipeline (specify->clarify->plan->plan-review->tasks->analyze->implement). Supports agent-teams for parallel plan review and implementation. Assumes idea.md exists."
-allowed-tools: ["Bash(python *orchestrator.py*)", "Bash(python *partition_tasks.py*)", "Read(docs/features/*/orchestrator-state.json)", "Read(docs/features/*/idea.md)", "Read(specs/*/spec.md)", "Read(specs/*/plan.md)", "Read(specs/*/tasks.md)"]
+allowed-tools: ["Bash(python *orchestrator.py*)", "Bash(python *partition_tasks.py*)", "Bash(python *verify_state.py*)", "Read(docs/features/*/orchestrator-state.json)", "Read(docs/features/*/idea.md)", "Read(specs/*/spec.md)", "Read(specs/*/plan.md)", "Read(specs/*/tasks.md)"]
 ---
 
 # SpecKit Orchestrator — Execute
@@ -43,7 +43,7 @@ Each execute call runs the next step. The stop hook auto-continues on success:
 | Step | Command | Purpose | Team? | Pauses? |
 |------|---------|---------|-------|---------|
 | 1 | `/speckit.specify` | Generate spec.md from idea.md | No | No |
-| 2 | `/speckit.clarify` | Resolve ambiguities (may skip) | No | Yes — human review |
+| 2 | `/speckit.clarify` | Resolve ambiguities (NEVER skip) | No | Yes — MUST wait for user |
 | 3 | `/speckit.plan` | Generate implementation plan | No | No |
 | 4 | Team phase | Parallel specialist plan reviews | Yes | No |
 | 5 | `/speckit.tasks` | Generate tasks.md | No | No |
@@ -51,6 +51,19 @@ Each execute call runs the next step. The stop hook auto-continues on success:
 | 7 | `/speckit.implement` | Execute tasks (parallel if teams) | Yes | No |
 
 Steps marked "Team?" use agent teams when `teams_enabled` is true. When false, step 4 is skipped and step 7 runs sequentially.
+
+### Clarify Step — Human-in-the-Loop (CRITICAL)
+
+The `clarify` step is a **mandatory human checkpoint**. The pipeline MUST stop after this step and wait for the user — no exceptions.
+
+**Rules:**
+1. **NEVER auto-answer clarification questions** — present them to the user and STOP. The user decides every answer.
+2. **NEVER skip clarify or select a default** — even if `/speckit.clarify` finds zero ambiguities, you must still present that finding to the user and wait for their explicit confirmation before continuing.
+3. **NEVER mark clarify as `"skipped"`** — always run it, always wait for the user, always mark as `"completed"` only after the user has reviewed.
+4. After running `/speckit.clarify`:
+   - **Questions found** → display all questions, then STOP. Do NOT answer them. Wait for the user to provide answers in a follow-up message. Only after the user responds, incorporate their answers and mark `clarify` as `"completed"`.
+   - **No questions found** → display: _"No ambiguities found in the spec. Ready to proceed to the plan step?"_ then STOP. Wait for the user to confirm before marking `clarify` as `"completed"`.
+5. Only set `clarify: "completed"` and `current_step: "plan"` **after** the user has explicitly reviewed and responded. The stop hook gates on the `plan` step — it will not auto-continue past clarify.
 
 ## Execution Instructions
 
@@ -96,6 +109,16 @@ The plan MUST include a detailed testing section covering:
 The testing section should specify test frameworks, file locations,
 and concrete test scenarios for each category.
 ```
+
+### Post-Specify Verification
+
+After `/speckit.specify` completes and before marking the step as completed, run:
+
+```bash
+python scripts/verify_state.py --fix
+```
+
+This verifies that `spec_dir` in orchestrator state matches the actual directory created by speckit. If there's a mismatch (e.g., speckit created `specs/042-dark-mode-toggle/` but state says `specs/dark-mode-toggle/`), `--fix` will auto-correct the state file.
 
 ### Analyze Resolution Flow (needs_resolve)
 
@@ -400,7 +423,7 @@ docs/features/<feature>/orchestrator-state.json
   "feature_name": "dark-mode-toggle",
   "branch_name": "042-dark-mode-toggle",
   "idea_file": "docs/features/dark-mode-toggle/idea.md",
-  "spec_dir": "specs/dark-mode-toggle",
+  "spec_dir": "specs/042-dark-mode-toggle",
   "current_step": "specify",
   "step_status": {
     "specify": "pending",

@@ -43,18 +43,24 @@ fi
 # -------------------------------------------------------------------
 
 # Check environment variables that Claude Code sets for teammates
+# and spawned agents (Agent tool / subagents)
 if [[ -n "${CLAUDE_AGENT_TEAM_NAME:-}" ]] || \
-   [[ -n "${CLAUDE_TEAMMATE_NAME:-}" ]]; then
-  _dbg "EXIT: teammate env vars set"
+   [[ -n "${CLAUDE_TEAMMATE_NAME:-}" ]] || \
+   [[ -n "${CLAUDE_CODE_AGENT_ID:-}" ]] || \
+   [[ -n "${CLAUDE_SPAWNED_BY:-}" ]] || \
+   [[ "${CLAUDE_CODE_ENTRYPOINT:-}" == "agent" ]]; then
+  _dbg "EXIT: teammate/agent env vars set"
   exit 0
 fi
 
-# Check hook input for teammate/team metadata (present in TeammateIdle
-# and TaskCompleted; may also appear in Stop for teammate sessions)
+# Check hook input for teammate/team/agent metadata
 TEAMMATE_NAME=$(echo "$HOOK_INPUT" | jq -r '.teammate_name // ""' 2>/dev/null || echo "")
 TEAM_NAME_INPUT=$(echo "$HOOK_INPUT" | jq -r '.team_name // ""' 2>/dev/null || echo "")
-if [[ -n "$TEAMMATE_NAME" ]] || [[ -n "$TEAM_NAME_INPUT" ]]; then
-  _dbg "EXIT: teammate/team in hook input"
+SPAWNED_BY=$(echo "$HOOK_INPUT" | jq -r '.spawned_by // .parent_session_id // ""' 2>/dev/null || echo "")
+IS_AGENT=$(echo "$HOOK_INPUT" | jq -r '.is_agent // .is_subagent // ""' 2>/dev/null || echo "")
+if [[ -n "$TEAMMATE_NAME" ]] || [[ -n "$TEAM_NAME_INPUT" ]] || \
+   [[ -n "$SPAWNED_BY" ]] || [[ "$IS_AGENT" == "true" ]]; then
+  _dbg "EXIT: teammate/team/agent in hook input"
   exit 0
 fi
 
@@ -81,8 +87,10 @@ fi
 # 1. Determine current branch; skip non-feature branches
 # -------------------------------------------------------------------
 BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 
 _dbg "BRANCH=$BRANCH"
+_dbg "REPO_ROOT=$REPO_ROOT"
 if [[ -z "$BRANCH" ]] || [[ "$BRANCH" == "main" ]] || [[ "$BRANCH" == "master" ]] || [[ "$BRANCH" == "develop" ]] || [[ "$BRANCH" == "HEAD" ]]; then
   _dbg "EXIT: non-feature branch ($BRANCH)"
   exit 0
@@ -103,7 +111,7 @@ else
   CANDIDATE="$BRANCH"
 fi
 
-CANDIDATE_FILE="docs/features/${CANDIDATE}/orchestrator-state.json"
+CANDIDATE_FILE="${REPO_ROOT}/docs/features/${CANDIDATE}/orchestrator-state.json"
 if [[ -f "$CANDIDATE_FILE" ]]; then
   STATE_FILE="$CANDIDATE_FILE"
   FEATURE="$CANDIDATE"
@@ -111,7 +119,7 @@ fi
 
 # Fallback: scan all state files for matching branch_name
 if [[ -z "$STATE_FILE" ]]; then
-  for f in docs/features/*/orchestrator-state.json; do
+  for f in "${REPO_ROOT}"/docs/features/*/orchestrator-state.json; do
     [[ -f "$f" ]] || continue
     FILE_BRANCH=$(jq -r '.branch_name // ""' "$f" 2>/dev/null || echo "")
     if [[ "$FILE_BRANCH" == "$BRANCH" ]]; then
@@ -301,25 +309,52 @@ if [[ "$COMPLETED_COUNT" -eq 0 ]]; then
   exit 0
 fi
 
-# Find the last completed step (the one that just finished)
-LAST_COMPLETED=""
-for i in "${!STEPS[@]}"; do
-  STEP="${STEPS[$i]}"
-  STATUS=$(echo "$STATE" | jq -r --arg s "$STEP" '.step_status[$s] // "pending"')
-  if [[ "$STATUS" == "completed" ]]; then
-    LAST_COMPLETED="$STEP"
-  fi
-done
+# Human-in-the-loop gate: certain steps require the user to review
+# results before the pipeline auto-continues.  We gate on NEXT_STEP
+# (the step about to run) rather than LAST_COMPLETED, so the check
+# works regardless of whether the preceding step was "completed" or
+# "skipped".
+#
+# "plan" is gated: after clarify finishes (completed OR skipped), the
+# pipeline MUST stop so the user can review clarification results and
+# confirm before planning begins.
+HUMAN_GATE_BEFORE=("plan")
 
-# Steps that require human review before auto-continuing
-HUMAN_PAUSE_STEPS=("clarify")
-
-for HP_STEP in "${HUMAN_PAUSE_STEPS[@]}"; do
-  if [[ "$LAST_COMPLETED" == "$HP_STEP" ]]; then
-    _dbg "EXIT: human pause after $HP_STEP"
+for GATE_STEP in "${HUMAN_GATE_BEFORE[@]}"; do
+  if [[ "$NEXT_STEP" == "$GATE_STEP" ]]; then
+    _dbg "EXIT: human gate before $GATE_STEP"
     exit 0
   fi
 done
+
+# -------------------------------------------------------------------
+# 10d. Loop breaker: prevent infinite retry when execute fails.
+#      Tracks how many consecutive times we block for the SAME next
+#      step. If the step hasn't progressed after 2 blocks, the
+#      execute command is failing — allow stop to break the loop.
+# -------------------------------------------------------------------
+LOOP_FILE="/tmp/speckit-loop-${FEATURE:-unknown}"
+if [[ -f "$LOOP_FILE" ]]; then
+  PREV_BLOCK=$(cat "$LOOP_FILE" 2>/dev/null || echo "")
+  PREV_STEP="${PREV_BLOCK%%|*}"
+  PREV_COUNT="${PREV_BLOCK##*|}"
+  PREV_COUNT="${PREV_COUNT:-0}"
+
+  if [[ "$PREV_STEP" == "$NEXT_STEP" ]]; then
+    NEW_COUNT=$((PREV_COUNT + 1))
+    if [[ "$NEW_COUNT" -ge 2 ]]; then
+      _dbg "EXIT: loop breaker for $NEXT_STEP (blocked $NEW_COUNT times with no progress)"
+      rm -f "$LOOP_FILE"
+      exit 0
+    fi
+    echo "${NEXT_STEP}|${NEW_COUNT}" > "$LOOP_FILE"
+  else
+    # Different step → progress was made, reset counter
+    echo "${NEXT_STEP}|1" > "$LOOP_FILE"
+  fi
+else
+  echo "${NEXT_STEP}|1" > "$LOOP_FILE"
+fi
 
 # -------------------------------------------------------------------
 # 11. We have a completed current step and a next step → block stop

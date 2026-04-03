@@ -87,7 +87,7 @@ class OrchestratorState:
             feature_name=feature_name,
             branch_name=branch_name,
             idea_file=os.path.join(feature_dir, "idea.md"),
-            spec_dir=os.path.join(base_dir, "specs", feature_name),
+            spec_dir=os.path.join(base_dir, "specs", branch_name),
             current_step=Step.SPECIFY.value,
             step_status=step_status,
             started_at=now,
@@ -115,7 +115,25 @@ class OrchestratorState:
                 else StepStatus.SKIPPED.value
             )
 
-        return cls(**data)
+        state = cls(**data)
+
+        # Warn if spec_dir doesn't exist but specs/<branch_name>/ does
+        spec_dir = state.spec_dir
+        if spec_dir and not os.path.isdir(spec_dir):
+            branch_spec_dir = os.path.join(
+                os.path.dirname(os.path.dirname(spec_dir)),
+                "specs", state.branch_name
+            ) if state.branch_name else None
+            if branch_spec_dir and os.path.isdir(branch_spec_dir) and branch_spec_dir != spec_dir:
+                import sys as _sys
+                print(
+                    f"⚠ Warning: spec_dir '{spec_dir}' does not exist, "
+                    f"but '{branch_spec_dir}' does.\n"
+                    f"  Run: python scripts/verify_state.py --fix",
+                    file=_sys.stderr,
+                )
+
+        return state
 
     def save(self, state_file: str) -> None:
         """Save state to file."""
