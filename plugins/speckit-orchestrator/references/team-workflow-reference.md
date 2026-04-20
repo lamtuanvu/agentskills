@@ -128,7 +128,7 @@ At the `implement` step, after `analyze` completes.
 
 1. Run `partition_tasks.py` on `specs/<feature>/tasks.md`:
    ```bash
-   python scripts/partition_tasks.py specs/<feature>/tasks.md --max-groups 3
+   python "${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts/partition_tasks.py" specs/<feature>/tasks.md --max-groups 3
    ```
 
 2. If `parallelizable: false` → fall back to sequential implementation (single agent)

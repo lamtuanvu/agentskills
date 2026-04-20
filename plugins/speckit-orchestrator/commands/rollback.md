@@ -22,7 +22,7 @@ Reset the SpecKit pipeline to a specific step, marking that step and all subsequ
 
 1. Run the orchestrator rollback command:
    ```bash
-   python plugins/speckit-orchestrator/scripts/orchestrator.py rollback <step>
+   python "${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts/orchestrator.py" rollback <step>
    ```
 
 2. Show confirmation and updated progress to the user.

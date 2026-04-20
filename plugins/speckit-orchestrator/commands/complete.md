@@ -21,12 +21,12 @@ This renames `orchestrator-state.json` to `orchestrator-state.completed.json`, w
 
 1. Run the orchestrator complete command:
    ```bash
-   python plugins/speckit-orchestrator/scripts/orchestrator.py complete
+   python "${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts/orchestrator.py" complete
    ```
 
 2. If the pipeline is not fully complete, use `--force`:
    ```bash
-   python plugins/speckit-orchestrator/scripts/orchestrator.py complete --force
+   python "${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts/orchestrator.py" complete --force
    ```
 
 3. Report the result to the user.

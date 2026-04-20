@@ -10,7 +10,7 @@ To pause the SpecKit orchestrator pipeline (so the stop hook stops auto-continui
 
 1. Run the orchestrator cancel command:
    ```bash
-   python skills/development/speckit-orchestrator/scripts/orchestrator.py cancel
+   python "${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts/orchestrator.py" cancel
    ```
 
 2. Report the result to the user.

@@ -115,7 +115,7 @@ and concrete test scenarios for each category.
 After `/speckit.specify` completes and before marking the step as completed, run:
 
 ```bash
-python scripts/verify_state.py --fix
+python "${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts/verify_state.py" --fix
 ```
 
 This verifies that `spec_dir` in orchestrator state matches the actual directory created by speckit. If there's a mismatch (e.g., speckit created `specs/042-dark-mode-toggle/` but state says `specs/dark-mode-toggle/`), `--fix` will auto-correct the state file.
@@ -271,7 +271,7 @@ Before running a team step, check:
 
 1. **Partition tasks:**
    ```bash
-   python scripts/partition_tasks.py specs/<feature>/tasks.md --max-groups 3
+   python "${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts/partition_tasks.py" specs/<feature>/tasks.md --max-groups 3
    ```
    If `parallelizable: false` → run sequential implementation (no team)
 
@@ -517,11 +517,11 @@ If `orchestrator-state.json` doesn't exist but `idea.md` does:
 
 1. Create the state file:
    ```bash
-   python orchestrator.py init <feature-name> <branch-name>
+   python "${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts/orchestrator.py" init <feature-name> <branch-name>
    ```
    Or without teams:
    ```bash
-   python orchestrator.py init <feature-name> <branch-name> --no-teams
+   python "${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts/orchestrator.py" init <feature-name> <branch-name> --no-teams
    ```
 
 2. Then run:
@@ -540,7 +540,7 @@ Create idea.md first (use /speckit-orchestrator:brainstorm or create manually)
 ### Missing state file
 ```
 Error: orchestrator-state.json not found
-Run: python orchestrator.py init <feature> <branch>
+Run: python "${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts/orchestrator.py" init <feature> <branch>
 ```
 
 ### Team creation failure
