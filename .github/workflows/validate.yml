@@ -160,7 +160,7 @@ jobs:
                   continue
               # Check local sources
               if isinstance(source, str):
-                  path = source.lstrip('./')
+                  path = source[2:] if source.startswith('./') else source
                   plugin_json = os.path.join(path, '.claude-plugin', 'plugin.json')
                   if not os.path.exists(plugin_json):
                       errors.append(f\"Plugin {plugin['name']}: plugin.json not found at {plugin_json}\")

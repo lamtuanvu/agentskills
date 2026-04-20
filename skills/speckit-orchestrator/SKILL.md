@@ -70,6 +70,7 @@ Do NOT stop between other steps. The goal is continuous execution from the curre
 | specify | Generate spec.md from idea.md | `references/step-specify.md` | No |
 | clarify | Resolve ambiguities (human gate) | `references/step-clarify.md` | **Yes** |
 | plan | Generate implementation plan | `references/step-plan.md` | No |
+| plan-review | Specialist agents review the plan | N/A (agent team phase) | No |
 | tasks | Generate task breakdown | `references/step-tasks.md` | No |
 | analyze | Check artifact consistency | `references/step-analyze.md` | No |
 | implement | Execute tasks, write tests | `references/step-implement.md` | No |

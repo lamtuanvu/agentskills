@@ -19,6 +19,13 @@ import { readFileSync, appendFileSync, mkdirSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 
+// --- HTML Escaping -----------------------------------------------------------
+
+function escapeHtml(s: string | null | undefined): string {
+  if (!s) return "";
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 // --- Logging -----------------------------------------------------------------
 
 const LOG_DIR = join(homedir(), ".claude", "channels", "github-ci");
@@ -39,7 +46,7 @@ const STATE_DIR =
   process.env.GITHUB_CI_STATE_DIR ??
   join(homedir(), ".claude", "channels", "github-ci");
 const ENV_FILE = join(STATE_DIR, ".env");
-const TG_CHAT_ID = process.env.TG_CHAT_ID ?? "5126220890";
+const TG_CHAT_ID = process.env.TG_CHAT_ID ?? "";
 
 // Load Telegram bot token from env or state .env
 let TG_BOT_TOKEN = process.env.TG_BOT_TOKEN ?? "";
@@ -52,7 +59,7 @@ if (!TG_BOT_TOKEN) {
 }
 
 async function sendTelegram(text: string) {
-  if (!TG_BOT_TOKEN) return;
+  if (!TG_BOT_TOKEN || !TG_CHAT_ID) return;
   try {
     await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
       method: "POST",
@@ -76,7 +83,14 @@ if (!WEBHOOK_SECRET) {
 
 if (!WEBHOOK_SECRET) {
   log(
-    `[github-ci] WARNING: No GITHUB_WEBHOOK_SECRET set. HMAC verification disabled.\n` +
+    `[github-ci] WARNING: No GITHUB_WEBHOOK_SECRET set. All webhook requests will be rejected.\n` +
+      `Set it in env or ${ENV_FILE}\n`
+  );
+}
+
+if (!TG_CHAT_ID) {
+  log(
+    `[github-ci] WARNING: No TG_CHAT_ID set. Telegram notifications disabled.\n` +
       `Set it in env or ${ENV_FILE}\n`
   );
 }
@@ -84,7 +98,7 @@ if (!WEBHOOK_SECRET) {
 // --- HMAC Verification -------------------------------------------------------
 
 function verifySignature(body: string, signature: string | null): boolean {
-  if (!WEBHOOK_SECRET) return true; // no secret = skip (warned at startup)
+  if (!WEBHOOK_SECRET) return false; // no secret = reject all (require explicit setup)
   if (!signature) return false;
   const expected =
     "sha256=" +
@@ -200,7 +214,7 @@ const mcp = new Server(
       "",
       "STEP 1 — LOCATE REPO:",
       "  Read ~/.claude/channels/github-ci/repo-map.json to find the local path for {repo}.",
-      "  If the repo is not mapped, send a Telegram message to chat_id 5126220890 saying the repo is unmapped and stop.",
+      `  If the repo is not mapped, send a Telegram message to chat_id ${TG_CHAT_ID || "<TG_CHAT_ID not set>"} saying the repo is unmapped and stop.`,
       "",
       "STEP 2 — WORKTREE CHECKOUT:",
       "  cd to the repository path, then create a git worktree based on the HEAD branch:",
@@ -227,7 +241,7 @@ const mcp = new Server(
       "STEP 5 — CLEANUP & NOTIFY:",
       "  a. cd back to the main repo directory",
       "  b. Remove the worktree: git worktree remove ../ci-fix-{branch} --force",
-      "  c. Send a Telegram message to chat_id 5126220890 with:",
+      `  c. Send a Telegram message to chat_id ${TG_CHAT_ID || "<TG_CHAT_ID not set>"} with:`,
       "     - What failed and why",
       "     - What you fixed",
       "     - The fix PR URL (targeting {branch}, not main)",
@@ -314,8 +328,18 @@ const server = Bun.serve({
     }
 
     // Send Telegram notification directly
-    const commit7 = failure.commit?.slice(0, 7) ?? "unknown";
-    const tgMsg = `<b>CI FAILURE</b>\n\nRepo: ${failure.repo}\nBranch: ${failure.branch}\nWorkflow: ${failure.workflow_name}\nCommit: ${commit7}\nPR: #${failure.pr ?? "n/a"}\n\n<a href="${failure.html_url}">View Run</a>\n\nClaude Code is investigating...`;
+    const commit7 = escapeHtml(failure.commit?.slice(0, 7) ?? "unknown");
+    const viewLink = failure.html_url
+      ? `\n\n<a href="${escapeHtml(failure.html_url)}">View Run</a>`
+      : "";
+    const tgMsg =
+      `<b>CI FAILURE</b>\n\n` +
+      `Repo: ${escapeHtml(failure.repo)}\n` +
+      `Branch: ${escapeHtml(failure.branch ?? "unknown")}\n` +
+      `Workflow: ${escapeHtml(failure.workflow_name)}\n` +
+      `Commit: ${commit7}\n` +
+      `PR: #${failure.pr ?? "n/a"}` +
+      `${viewLink}\n\nClaude Code is investigating...`;
     await sendTelegram(tgMsg);
 
     // Push to Claude Code for auto-fix
@@ -338,6 +362,6 @@ const server = Bun.serve({
 });
 
 log(`[github-ci] Channel listening on http://127.0.0.1:${server.port}`);
-log(`[github-ci] TG_BOT_TOKEN loaded: ${TG_BOT_TOKEN ? "yes (" + TG_BOT_TOKEN.slice(0, 6) + "...)" : "NO"}`);
+log(`[github-ci] TG_BOT_TOKEN loaded: ${TG_BOT_TOKEN ? "yes" : "NO"}`);
 await sendTelegram("CI Watcher online. Listening on port " + server.port);
 log("[github-ci] Startup Telegram sent");

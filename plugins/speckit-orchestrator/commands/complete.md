@@ -21,12 +21,15 @@ This renames `orchestrator-state.json` to `orchestrator-state.completed.json`, w
 
 1. Run the orchestrator complete command:
    ```bash
-   python "${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts/orchestrator.py" complete
+   SCRIPTS_DIR="${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts"
+   [ -d "$SCRIPTS_DIR" ] || SCRIPTS_DIR="${AGENTSKILLS_ROOT:-}/skills/speckit-orchestrator/scripts"
+   [ -d "$SCRIPTS_DIR" ] || { echo "Error: speckit scripts not found. Set AGENTSKILLS_ROOT." >&2; exit 1; }
+   python "$SCRIPTS_DIR/orchestrator.py" complete
    ```
 
 2. If the pipeline is not fully complete, use `--force`:
    ```bash
-   python "${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts/orchestrator.py" complete --force
+   python "$SCRIPTS_DIR/orchestrator.py" complete --force
    ```
 
 3. Report the result to the user.

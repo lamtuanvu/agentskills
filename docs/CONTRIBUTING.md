@@ -60,8 +60,8 @@ Step-by-step guidance for the agent...
 ### 1. Fork the Repository
 
 ```bash
-git clone https://github.com/lamtuanvu/claude-code-marketplace.git
-cd claude-code-marketplace
+git clone https://github.com/lamtuanvu/agentskills.git
+cd agentskills
 ```
 
 ### 2. Create Skill Directory
