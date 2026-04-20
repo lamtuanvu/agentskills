@@ -98,7 +98,7 @@ docs/features/<feature>/orchestrator-state.json
   "feature_name": "dark-mode-toggle",
   "branch_name": "042-dark-mode-toggle",
   "idea_file": "docs/features/dark-mode-toggle/idea.md",
-  "spec_dir": "specs/dark-mode-toggle",
+  "spec_dir": "specs/042-dark-mode-toggle",
   "current_step": "specify",
   "step_status": {
     "specify": "pending",
