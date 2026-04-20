@@ -2,6 +2,9 @@
 name: gemini-image-gen
 description: "Generates high-quality images using Google's Gemini API. Supports SVG vector graphics (icons, logos, illustrations, UI elements) via text models and PNG raster images via image generation models. This skill should be used when generating visual assets, creating vector resources for projects, producing icons or logos, or creating image content with AI."
 argument-hint: "a flat-style settings gear icon"
+metadata:
+  author: lamtuanvu
+  version: "1.0.0"
 ---
 
 # Gemini Image Generation

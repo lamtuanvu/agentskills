@@ -1,0 +1,6 @@
+{
+  "name": "github-ci",
+  "description": "GitHub CI failure channel — listens for webhook events, filters for failures, deduplicates, and pushes to Claude Code for auto-fix.",
+  "version": "0.2.0",
+  "keywords": ["github", "ci", "webhook", "channel"]
+}
