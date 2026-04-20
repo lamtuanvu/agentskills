@@ -17,11 +17,21 @@ import sys
 from datetime import datetime, timezone
 
 
+def _safe_path(base_dir: str, *parts: str) -> str:
+    """Join path components and assert the result stays within base_dir."""
+    joined = os.path.normpath(os.path.join(base_dir, *parts))
+    real_base = os.path.realpath(base_dir)
+    real_joined = os.path.realpath(joined) if os.path.exists(joined) else os.path.normpath(os.path.join(real_base, *parts))
+    if not real_joined.startswith(real_base + os.sep) and real_joined != real_base:
+        raise ValueError(f"Path traversal detected: {parts!r} escapes base directory")
+    return joined
+
+
 def create_state(feature_name: str, branch_name: str, base_dir: str,
                  teams_enabled: bool = True) -> dict:
     """Create initial orchestrator state."""
     now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    feature_dir = os.path.join(base_dir, "docs", "features", feature_name)
+    feature_dir = _safe_path(base_dir, "docs", "features", feature_name)
 
     step_status = {
         "specify": "pending",
@@ -36,8 +46,8 @@ def create_state(feature_name: str, branch_name: str, base_dir: str,
     return {
         "feature_name": feature_name,
         "branch_name": branch_name,
-        "idea_file": os.path.join(feature_dir, "idea.md"),
-        "spec_dir": os.path.join(base_dir, "specs", branch_name),
+        "idea_file": _safe_path(feature_dir, "idea.md"),
+        "spec_dir": _safe_path(base_dir, "specs", branch_name),
         "current_step": "specify",
         "step_status": step_status,
         "started_at": now,
@@ -69,7 +79,11 @@ def main():
 
     args = parser.parse_args()
 
-    feature_dir = os.path.join(args.base_dir, "docs", "features", args.feature)
+    try:
+        feature_dir = _safe_path(args.base_dir, "docs", "features", args.feature)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
     state_file = os.path.join(feature_dir, "orchestrator-state.json")
 
     # Create directory

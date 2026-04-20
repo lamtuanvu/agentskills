@@ -33,6 +33,16 @@ from enum import Enum
 from typing import Optional, Tuple
 
 
+def _safe_path(base_dir: str, *parts: str) -> str:
+    """Join path components and assert the result stays within base_dir."""
+    joined = os.path.normpath(os.path.join(base_dir, *parts))
+    real_base = os.path.realpath(base_dir)
+    real_joined = os.path.realpath(joined) if os.path.exists(joined) else os.path.normpath(os.path.join(real_base, *parts))
+    if not real_joined.startswith(real_base + os.sep) and real_joined != real_base:
+        raise ValueError(f"Path traversal detected: {parts!r} escapes base directory")
+    return joined
+
+
 class Step(Enum):
     SPECIFY = "specify"
     CLARIFY = "clarify"
@@ -71,7 +81,7 @@ class OrchestratorState:
             teams_enabled: bool = True) -> 'OrchestratorState':
         """Create new state."""
         now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-        feature_dir = os.path.join(base_dir, "docs", "features", feature_name)
+        feature_dir = _safe_path(base_dir, "docs", "features", feature_name)
 
         step_status = {
             Step.SPECIFY.value: StepStatus.PENDING.value,
@@ -86,8 +96,8 @@ class OrchestratorState:
         return cls(
             feature_name=feature_name,
             branch_name=branch_name,
-            idea_file=os.path.join(feature_dir, "idea.md"),
-            spec_dir=os.path.join(base_dir, "specs", branch_name),
+            idea_file=_safe_path(feature_dir, "idea.md"),
+            spec_dir=_safe_path(base_dir, "specs", branch_name),
             current_step=Step.SPECIFY.value,
             step_status=step_status,
             started_at=now,
@@ -348,8 +358,12 @@ def cmd_init(args):
     base_dir = os.getcwd()
     teams_enabled = getattr(args, 'teams', True)
 
-    # Create state
-    state = OrchestratorState.new(feature, branch, base_dir, teams_enabled=teams_enabled)
+    # Create state (raises ValueError on path traversal in feature/branch names)
+    try:
+        state = OrchestratorState.new(feature, branch, base_dir, teams_enabled=teams_enabled)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
     # Check idea.md exists
     if not os.path.exists(state.idea_file):
