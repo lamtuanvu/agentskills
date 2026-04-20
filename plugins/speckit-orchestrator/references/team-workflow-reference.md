@@ -128,7 +128,10 @@ At the `implement` step, after `analyze` completes.
 
 1. Run `partition_tasks.py` on `specs/<feature>/tasks.md`:
    ```bash
-   python scripts/partition_tasks.py specs/<feature>/tasks.md --max-groups 3
+   SCRIPTS_DIR="${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts"
+   [ -d "$SCRIPTS_DIR" ] || SCRIPTS_DIR="${AGENTSKILLS_ROOT:-}/skills/speckit-orchestrator/scripts"
+   [ -d "$SCRIPTS_DIR" ] || { echo "Error: speckit scripts not found. Set AGENTSKILLS_ROOT." >&2; exit 1; }
+   python "$SCRIPTS_DIR/partition_tasks.py" specs/<feature>/tasks.md --max-groups 3
    ```
 
 2. If `parallelizable: false` → fall back to sequential implementation (single agent)

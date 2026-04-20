@@ -1,112 +1,181 @@
-# Claude Code Skills Marketplace
+# agentskills
 
-[![Skills](https://img.shields.io/badge/skills-3-blue)](skills/)
+[![Skills](https://img.shields.io/badge/skills-11-blue)](skills/)
+[![Plugins](https://img.shields.io/badge/plugins-4-purple)](plugins/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 [![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](docs/CONTRIBUTING.md)
 
-Skills for Claude Code - structured feature development and plugin creation tools.
-
-## Quick Start
-
-### 1. Add Marketplace
-```
-/plugin marketplace add https://github.com/lamtuanvu/claude-code-marketplace
-```
-
-### 2. Install Skills
-```bash
-# Install individual skill
-/plugin install speckit-orchestrator@lamtuanvu-marketplace
-/plugin install speckit-brainstorm@lamtuanvu-marketplace
-/plugin install plugin-creator@lamtuanvu-marketplace
-
-# Or install all skills
-/plugin install-all lamtuanvu-marketplace
-```
-
-### 3. Use Skills
-```
-/speckit-brainstorm Add dark mode toggle
-/speckit-orchestrator:execute
-/plugin-creator
-```
-
-## Available Skills
-
-### Plugin Creator
-
-Create and develop Claude Code plugins with incremental component addition.
-
-```bash
-/plugin-creator
-```
-
-Features:
-- Initialize new plugins with proper manifest structure
-- Add skills, agents, commands, hooks, MCP servers, LSP servers
-- Validate plugin structure
-- Package for distribution
-
-### SpecKit Workflow
-
-SpecKit is a structured feature development workflow:
-
-```
-brainstorm → specify → clarify → plan → tasks → analyze → implement
-```
-
-| Skill | Description |
-|-------|-------------|
-| [plugin-creator](skills/development/plugin-creator) | Create and develop Claude Code plugins incrementally |
-| [speckit-brainstorm](skills/development/speckit-brainstorm) | Start here - explore ideas, define requirements, produce idea.md |
-| [speckit-orchestrator](skills/development/speckit-orchestrator) | Execute the pipeline one step at a time |
-
-### Workflow
-
-1. **Start with brainstorming**: `/speckit-brainstorm <feature description>`
-   - Explores your feature idea
-   - Defines requirements
-   - Creates `idea.md` and `orchestrator-state.json`
-
-2. **Execute the pipeline**: `/speckit-orchestrator:execute`
-   - Runs one step at a time
-   - Follows `idea.md` as source of truth
-   - Progress: specify → clarify → plan → [plan-review] → tasks → analyze → implement
-
-3. **Check progress**: `/speckit-orchestrator:status`
-
-4. **Reset to a step**: `/speckit-orchestrator:rollback <step>`
-
-5. **Pause pipeline**: `/speckit-orchestrator:cancel-pipeline`
-
-## Skill Structure
-
-```
-skills/
-└── development/
-    ├── plugin-creator/
-    │   ├── SKILL.md
-    │   ├── scripts/
-    │   └── references/
-    ├── speckit-brainstorm/
-    │   ├── SKILL.md
-    │   ├── scripts/
-    │   └── references/
-    └── speckit-orchestrator/
-        ├── SKILL.md
-        ├── scripts/
-        ├── references/
-        └── assets/
-```
-
-## Contributing
-
-See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for how to add your skills.
-
-## License
-
-Apache 2.0 - See [LICENSE](LICENSE)
+A collection of AI agent skills and Claude Code plugins. Skills work across any agent that supports the [agentskills.io](https://agentskills.io) spec. Claude Code plugins layer on top of skills to add hooks, slash commands, and parallel agent teams.
 
 ---
 
-Built with Claude Code
+## Skills
+
+Skills are portable — they work with Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot, Warp, and any agent that supports the agentskills.io spec.
+
+### Install
+
+```bash
+# Install all skills globally
+npx skills add lamtuanvu/agentskills -g -y
+
+# Install a single skill
+npx skills add lamtuanvu/agentskills@gemini-image-gen -g -y
+```
+
+### Available Skills
+
+| Skill | Description |
+|-------|-------------|
+| [agent-manager](skills/agent-manager) | Manage local CLI agents via tmux sessions (start/stop/monitor/assign) |
+| [brand-guidelines](skills/brand-guidelines) | Anthropic brand colors and typography for any artifact |
+| [find-docs](skills/find-docs) | Fetch up-to-date docs for any library, framework, or SDK via Context7 |
+| [gemini-image-gen](skills/gemini-image-gen) | Generate SVG vector graphics and PNG images via Google Gemini API |
+| [mcp-builder](skills/mcp-builder) | Guide and templates for building MCP servers (Python/Node) |
+| [plugin-creator](skills/plugin-creator) | Scaffold and develop Claude Code plugins incrementally |
+| [skill-creator](skills/skill-creator) | Guide for creating agentskills-compatible SKILL.md packages |
+| [speckit-brainstorm](skills/speckit-brainstorm) | Brainstorm a feature, define requirements, produce `idea.md` |
+| [speckit-orchestrator](skills/speckit-orchestrator) | Run the SpecKit pipeline: specify → clarify → plan → tasks → analyze → implement |
+| [vectcut-api](skills/vectcut-api) | CapCut/JianYing video editing API reference and Python client |
+| [video-proposal](skills/video-proposal) | Analyze a clip collection and propose short-form video concepts |
+
+### Usage
+
+Once installed, invoke a skill by describing the task. Your agent will automatically select the relevant skill. You can also invoke explicitly:
+
+```
+# Claude Code
+/find-docs how do I use React Server Components?
+/gemini-image-gen a minimalist settings gear icon
+
+# Other agents (varies by agent)
+@find-docs how do I configure Prisma with PostgreSQL?
+```
+
+---
+
+## Claude Code Plugins
+
+Plugins are Claude Code-specific. They extend skills with:
+- **Stop hooks** — auto-continue pipelines without user intervention
+- **Slash commands** — `/speckit-orchestrator:execute`, `/speckit-orchestrator:status`, etc.
+- **Agent teams** — parallel specialist agents for plan review and implementation
+
+### Install
+
+```
+# Step 1 — add this repo as a marketplace source (one time)
+/plugin marketplace add https://github.com/lamtuanvu/agentskills
+
+# Step 2 — install a plugin
+/plugin install speckit-orchestrator@lamtuanvu-marketplace
+/plugin install github-ci@lamtuanvu-marketplace
+```
+
+### Available Plugins
+
+| Plugin | Enhances | What it adds |
+|--------|----------|--------------|
+| [speckit-orchestrator](plugins/speckit-orchestrator) | speckit-brainstorm + speckit-orchestrator skills | Stop hook auto-continuation, `/speckit-orchestrator:*` commands, parallel agent teams for plan review and implementation |
+| [github-ci](plugins/github-ci) | — | Webhook listener for GitHub CI failures; pushes failures into your Claude Code session for automated diagnosis and fix |
+| [capcut-api](https://github.com/lamtuanvu/VectCutAPI) | vectcut-api skill | CapCut/JianYing MCP tools for direct video editing |
+| [ai-video-editor](https://github.com/lamtuanvu/video-to-structured-metadata) | video-proposal skill | Scene detection, audio transcription, vision analysis for video metadata |
+
+---
+
+## SpecKit Workflow
+
+SpecKit is a structured feature development pipeline built on the speckit-brainstorm and speckit-orchestrator skills.
+
+```
+speckit-brainstorm → idea.md → speckit-orchestrator → spec → clarify → plan → tasks → analyze → implement
+```
+
+### With any agent (skill only)
+
+```bash
+# 1. Install the skills
+npx skills add lamtuanvu/agentskills@speckit-brainstorm -g -y
+npx skills add lamtuanvu/agentskills@speckit-orchestrator -g -y
+
+# 2. Brainstorm a feature
+# Invoke speckit-brainstorm with your feature idea.
+# It explores the codebase, asks clarifying questions,
+# and produces docs/features/<name>/idea.md on approval.
+
+# 3. Run the pipeline
+# Invoke speckit-orchestrator.
+# It reads idea.md, runs each step, and pauses at clarify for your review.
+# After clarify, re-invoke to continue through to implementation.
+```
+
+### With Claude Code (skill + plugin)
+
+```
+# Install skills first
+npx skills add lamtuanvu/agentskills@speckit-brainstorm -g -y
+npx skills add lamtuanvu/agentskills@speckit-orchestrator -g -y
+
+# Then install the plugin for full automation
+/plugin install speckit-orchestrator@lamtuanvu-marketplace
+```
+
+The plugin adds:
+- **Auto-continuation**: stop hook feeds `/speckit-orchestrator:execute` after each step — pipeline runs to completion unattended (pauses only at the clarify checkpoint)
+- **Parallel brainstorm**: agent team (architect, UX analyst, feasibility analyst, devil's advocate) analyzes your feature from all angles before writing `idea.md`
+- **Parallel plan review**: security, performance, conventions, and UI specialists review the plan in parallel
+- **Parallel implementation**: tasks partitioned across multiple implementers + dedicated test-writer and QA reviewer
+
+Commands:
+```
+/speckit-orchestrator:brainstorm <feature description>
+/speckit-orchestrator:execute
+/speckit-orchestrator:status
+/speckit-orchestrator:rollback <step>
+/speckit-orchestrator:cancel-pipeline
+```
+
+---
+
+## Repo Layout
+
+```
+agentskills/
+├── skills/                          # Portable agentskills.io skills
+│   ├── speckit-orchestrator/
+│   │   ├── SKILL.md                 # Pipeline instructions + loop logic
+│   │   ├── scripts/                 # Shared Python scripts (canonical)
+│   │   │   ├── orchestrator.py      # State machine
+│   │   │   ├── verify_state.py      # State verification
+│   │   │   ├── partition_tasks.py   # Task partitioning
+│   │   │   └── init_feature.py      # Feature initialization
+│   │   └── references/              # Step-by-step guides
+│   │       ├── step-specify.md
+│   │       ├── step-clarify.md
+│   │       ├── step-plan.md
+│   │       ├── step-tasks.md
+│   │       ├── step-analyze.md
+│   │       └── step-implement.md
+│   └── ...                          # Other skills
+├── plugins/                         # Claude Code plugins
+│   ├── speckit-orchestrator/
+│   │   ├── hooks/                   # Stop hook (auto-continuation)
+│   │   ├── commands/                # Slash commands
+│   │   └── agents/                  # Team agent definitions
+│   │   # Scripts inherited from skills/speckit-orchestrator/scripts/
+│   └── github-ci/                   # CI failure MCP channel server
+└── .claude-plugin/
+    └── marketplace.json             # Claude Code plugin registry
+```
+
+**Inheritance**: The `speckit-orchestrator` plugin has no scripts of its own — it references `skills/speckit-orchestrator/scripts/` directly. The skill is the base; the plugin is the Claude Code enhancement layer.
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for how to add a skill or plugin.
+
+## License
+
+Apache 2.0 — see [LICENSE](LICENSE)

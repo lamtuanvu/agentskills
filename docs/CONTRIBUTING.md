@@ -1,13 +1,13 @@
-# Contributing to Claude Code Skills Marketplace
+# Contributing
 
-Thank you for your interest in contributing! This guide explains how to add your own skills to the marketplace.
+Thank you for your interest in contributing! This guide explains how to add skills to the marketplace.
 
 ## Skill Structure
 
-Every skill must follow this structure:
+Every skill follows a flat layout:
 
 ```
-skills/<category>/<skill-name>/
+skills/<skill-name>/
 ├── SKILL.md              # Required: Main skill file
 ├── scripts/              # Optional: Executable code
 ├── references/           # Optional: Documentation
@@ -23,6 +23,9 @@ Your skill must have a `SKILL.md` file with YAML frontmatter:
 name: my-skill
 description: Clear description of what this skill does and when to use it.
 argument-hint: Optional hint for skill arguments
+metadata:
+  author: your-github-username
+  version: "1.0.0"
 ---
 
 # My Skill
@@ -37,7 +40,7 @@ Describe scenarios when this skill should trigger...
 
 ## Instructions
 
-Step-by-step guidance for Claude...
+Step-by-step guidance for the agent...
 ```
 
 ### Frontmatter Fields
@@ -46,59 +49,47 @@ Step-by-step guidance for Claude...
 |-------|----------|-------------|
 | `name` | Yes | Unique skill identifier (kebab-case) |
 | `description` | Yes | Clear, specific description of purpose |
-| `argument-hint` | No | Hint for command arguments |
+| `metadata.author` | Recommended | Your GitHub username |
+| `metadata.version` | Recommended | Semantic version (e.g., "1.0.0") |
+| `argument-hint` | No | Hint for skill arguments |
+| `allowed-tools` | No | List of tools the skill uses (e.g., `["Bash", "Read"]`) |
 | `license` | No | License reference |
-
-## Categories
-
-Place your skill in the appropriate category:
-
-| Category | Description | Examples |
-|----------|-------------|----------|
-| `development` | Coding workflows, tools | speckit, code-review |
-| `integrations` | APIs, services, MCP | mcp-builder, slack |
-| `documentation` | Docs, styling | brand-guidelines, readme-gen |
-| `automation` | Task automation | agent-manager, cron-jobs |
 
 ## Adding Your Skill
 
 ### 1. Fork the Repository
 
 ```bash
-git clone https://github.com/lamtuanvu/claude-code-marketplace.git
-cd claude-code-marketplace
+git clone https://github.com/lamtuanvu/agentskills.git
+cd agentskills
 ```
 
 ### 2. Create Skill Directory
 
 ```bash
-mkdir -p skills/<category>/<skill-name>
+mkdir -p skills/<skill-name>
 ```
 
 ### 3. Create SKILL.md
 
-Write your skill following the structure above.
+Write your skill following the structure above. Use agent-neutral language -- avoid referencing specific agents (e.g., use "the agent" instead of "Claude").
 
-### 4. Add to marketplace.json
+### 4. Test Locally
 
-Edit `.claude-plugin/marketplace.json` and add your skill:
+```bash
+# Install via agentskills CLI
+npx skills add . -g -y
 
-```json
-{
-  "name": "my-skill",
-  "version": "1.0.0",
-  "description": "What my skill does",
-  "source": "./skills/category/my-skill",
-  "keywords": ["relevant", "keywords"]
-}
+# Or copy manually
+cp -r skills/my-skill ~/.claude/skills/
 ```
 
 ### 5. Submit Pull Request
 
 ```bash
 git checkout -b add-my-skill
-git add .
-git commit -m "Add my-skill to marketplace"
+git add skills/my-skill/
+git commit -m "Add my-skill"
 git push origin add-my-skill
 ```
 
@@ -111,33 +102,25 @@ Then open a pull request on GitHub.
 - Solve a specific, real problem
 - Have clear, actionable instructions
 - Include usage examples
-- Work reliably across environments
+- Work reliably across environments and agents
 
-### Skill.md Best Practices
+### SKILL.md Best Practices
 
-1. **Be Specific**: Claude needs clear instructions
+1. **Be Specific**: Agents need clear instructions
 2. **Use Imperative Form**: "Run this command" not "You should run"
 3. **Include Examples**: Show concrete usage
 4. **Reference Resources**: Point to scripts, docs as needed
 5. **Handle Errors**: Explain what to do when things fail
-
-### Testing Your Skill
-
-Before submitting:
-
-1. Install locally: `cp -r my-skill ~/.claude/skills/`
-2. Test invocation: `/my-skill`
-3. Verify Claude understands the instructions
-4. Test edge cases
+6. **Stay Portable**: Use agent-neutral language
 
 ## Validation
 
 The CI pipeline validates:
 
-- SKILL.md exists with valid frontmatter
+- `SKILL.md` exists with valid frontmatter
 - Required fields (`name`, `description`) present
-- Skill directory structure
-- marketplace.json format
+- Flat `skills/<name>/` directory structure
+- `metadata` fields recommended but not required
 
 ## License
 

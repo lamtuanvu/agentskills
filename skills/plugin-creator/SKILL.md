@@ -1,6 +1,9 @@
 ---
 name: plugin-creator
 description: Guide for creating and incrementally building Claude Code plugins. Use when users want to create a new plugin, add components to an existing plugin, or package plugins for distribution.
+metadata:
+  author: lamtuanvu
+  version: "1.0.0"
 ---
 
 # Plugin Creator

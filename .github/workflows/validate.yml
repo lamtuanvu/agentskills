@@ -47,6 +47,33 @@ jobs:
           print(f\"Validated {len(data['plugins'])} plugins\")
           "
 
+      - name: Validate flat skills layout
+        run: |
+          python -c "
+          import os
+          import sys
+
+          skills_dir = 'skills'
+          errors = []
+
+          for entry in os.listdir(skills_dir):
+              entry_path = os.path.join(skills_dir, entry)
+              if not os.path.isdir(entry_path):
+                  continue
+              # Check for nested category directories (not allowed)
+              for sub in os.listdir(entry_path):
+                  sub_path = os.path.join(entry_path, sub)
+                  if os.path.isdir(sub_path) and os.path.exists(os.path.join(sub_path, 'SKILL.md')):
+                      errors.append(f'Nested skill found: {sub_path}/SKILL.md — use flat layout skills/{sub}/ instead')
+
+          if errors:
+              for error in errors:
+                  print(f'ERROR: {error}')
+              sys.exit(1)
+
+          print('Flat layout validated')
+          "
+
       - name: Validate SKILL.md files
         run: |
           python -c "
@@ -56,38 +83,56 @@ jobs:
 
           skills_dir = 'skills'
           errors = []
+          warnings = []
           validated = 0
 
-          for root, dirs, files in os.walk(skills_dir):
-              if 'SKILL.md' in files:
-                  skill_path = os.path.join(root, 'SKILL.md')
-                  with open(skill_path) as f:
-                      content = f.read()
+          for entry in sorted(os.listdir(skills_dir)):
+              entry_path = os.path.join(skills_dir, entry)
+              if not os.path.isdir(entry_path):
+                  continue
 
-                  # Check for frontmatter
-                  if not content.startswith('---'):
-                      errors.append(f'{skill_path}: Missing YAML frontmatter')
-                      continue
+              skill_path = os.path.join(entry_path, 'SKILL.md')
+              if not os.path.exists(skill_path):
+                  errors.append(f'{entry_path}: Missing SKILL.md')
+                  continue
 
-                  # Extract frontmatter
-                  parts = content.split('---', 2)
-                  if len(parts) < 3:
-                      errors.append(f'{skill_path}: Invalid frontmatter format')
-                      continue
+              with open(skill_path) as f:
+                  content = f.read()
 
-                  try:
-                      frontmatter = yaml.safe_load(parts[1])
-                  except yaml.YAMLError as e:
-                      errors.append(f'{skill_path}: Invalid YAML: {e}')
-                      continue
+              # Check for frontmatter
+              if not content.startswith('---'):
+                  errors.append(f'{skill_path}: Missing YAML frontmatter')
+                  continue
 
-                  # Check required fields
-                  if 'name' not in frontmatter:
-                      errors.append(f'{skill_path}: Missing required field: name')
-                  if 'description' not in frontmatter:
-                      errors.append(f'{skill_path}: Missing required field: description')
+              # Extract frontmatter
+              parts = content.split('---', 2)
+              if len(parts) < 3:
+                  errors.append(f'{skill_path}: Invalid frontmatter format')
+                  continue
 
-                  validated += 1
+              try:
+                  frontmatter = yaml.safe_load(parts[1])
+              except yaml.YAMLError as e:
+                  errors.append(f'{skill_path}: Invalid YAML: {e}')
+                  continue
+
+              # Check required fields
+              if 'name' not in frontmatter:
+                  errors.append(f'{skill_path}: Missing required field: name')
+              if 'description' not in frontmatter:
+                  errors.append(f'{skill_path}: Missing required field: description')
+
+              # Check recommended fields
+              metadata = frontmatter.get('metadata', {})
+              if not metadata or 'author' not in metadata:
+                  warnings.append(f'{skill_path}: Missing recommended field: metadata.author')
+              if not metadata or 'version' not in metadata:
+                  warnings.append(f'{skill_path}: Missing recommended field: metadata.version')
+
+              validated += 1
+
+          for warning in warnings:
+              print(f'WARNING: {warning}')
 
           if errors:
               for error in errors:
@@ -97,7 +142,7 @@ jobs:
           print(f'Validated {validated} skill files')
           "
 
-      - name: Check skill sources exist
+      - name: Check local plugin sources exist
         run: |
           python -c "
           import json
@@ -110,18 +155,20 @@ jobs:
           errors = []
           for plugin in data['plugins']:
               source = plugin['source']
-              # Convert ./skills/... to skills/...
-              if source.startswith('./'):
-                  source = source[2:]
-
-              skill_md = os.path.join(source, 'SKILL.md')
-              if not os.path.exists(skill_md):
-                  errors.append(f\"Plugin {plugin['name']}: SKILL.md not found at {skill_md}\")
+              # Skip remote sources (GitHub refs)
+              if isinstance(source, dict):
+                  continue
+              # Check local sources
+              if isinstance(source, str):
+                  path = source[2:] if source.startswith('./') else source
+                  plugin_json = os.path.join(path, '.claude-plugin', 'plugin.json')
+                  if not os.path.exists(plugin_json):
+                      errors.append(f\"Plugin {plugin['name']}: plugin.json not found at {plugin_json}\")
 
           if errors:
               for error in errors:
                   print(f'ERROR: {error}')
               sys.exit(1)
 
-          print('All plugin sources validated')
+          print('All local plugin sources validated')
           "

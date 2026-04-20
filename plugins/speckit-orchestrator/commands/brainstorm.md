@@ -261,7 +261,7 @@ Write the state file to `docs/features/<feature-name>/orchestrator-state.json`:
   "feature_name": "<feature-name>",
   "branch_name": "<NNN>-<feature-name>",
   "idea_file": "docs/features/<feature-name>/idea.md",
-  "spec_dir": "specs/<feature-name>",
+  "spec_dir": "specs/<NNN>-<feature-name>",
   "current_step": "specify",
   "step_status": {
     "specify": "pending",

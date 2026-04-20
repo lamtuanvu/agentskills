@@ -1,0 +1,242 @@
+{
+  "collection_summary": {
+    "total_clips": 106,
+    "total_duration_minutes": 51.6,
+    "primary_themes": [
+      "mountain road trip through Ha Giang / Tay Bac",
+      "foggy mountain passes and winding roads",
+      "family travel with young children",
+      "Vietnamese highland village culture",
+      "camping and outdoor adventure",
+      "scenic overlooks and viewpoints"
+    ],
+    "tone": "Calm, serene, and adventurous - a family road trip through the misty highlands of northern Vietnam. Alternates between peaceful contemplation of mountain landscapes and excited family exploration moments. Strong sense of wonder and discovery.",
+    "style": "Primarily handheld/dashcam footage shot on phone in vertical (9:16). Mix of static in-car shots, slow panning landscapes, and tracking shots of motorcyclists on mountain roads. Raw, authentic vlog-style with natural ambient sound and Vietnamese family conversations."
+  },
+  "clip_categories": {
+    "scenic_landscape": [
+      {"video_id": "IMG_6239", "file": "IMG_6239.mov", "duration": 27.5, "description": "Roadside view of rural landscape with lush greenery and hazy mountains", "quality_score": 4},
+      {"video_id": "IMG_6260", "file": "IMG_6260.mov", "duration": 23.7, "description": "Misty mountain landscape with winding road disappearing into fog", "quality_score": 5},
+      {"video_id": "IMG_6264", "file": "IMG_6264.mov", "duration": 27.9, "description": "Person standing on foggy mountain peak looking at view - reflective moment", "quality_score": 5},
+      {"video_id": "IMG_6296 (1)", "file": "IMG_6296 (1).mov", "duration": 10.7, "description": "Misty mountainous landscape with small village nestled in valley", "quality_score": 5},
+      {"video_id": "IMG_6308 (1)", "file": "IMG_6308 (1).mov", "duration": 27.3, "description": "Rural landscape with green fields and misty mountains in background", "quality_score": 4},
+      {"video_id": "IMG_6323", "file": "IMG_6323.mov", "duration": 73.7, "description": "Scenic mountainous area with greenery and cloudy skies - long establishing shot", "quality_score": 4},
+      {"video_id": "IMG_6371", "file": "IMG_6371.mov", "duration": 44.3, "description": "Scenic mountain road with rustic buildings and lush greenery under clear blue sky", "quality_score": 5},
+      {"video_id": "IMG_6370", "file": "IMG_6370.mov", "duration": 23.1, "description": "Winding mountain road with lush greenery and small village houses in distance", "quality_score": 4},
+      {"video_id": "IMG_6377", "file": "IMG_6377.mov", "duration": 30.2, "description": "Hillside with blooming pink flowers and prominent flag atop peak", "quality_score": 5},
+      {"video_id": "IMG_6135", "file": "IMG_6135.mov", "duration": 8.2, "description": "Towering limestone karsts with railway track in foreground", "quality_score": 4},
+      {"video_id": "IMG_7006", "file": "IMG_7006.mov", "duration": 0.9, "description": "Misty mountain landscape with small village among hills - Xã Cán Tỷ", "quality_score": 3},
+      {"video_id": "IMG_7007", "file": "IMG_7007.mov", "duration": 31.8, "description": "Misty mountain landscape with small village among hills - Xã Cán Tỷ", "quality_score": 5},
+      {"video_id": "IMG_7039", "file": "IMG_7039.mov", "duration": 17.7, "description": "People on viewing platform overlooking misty mountains with red flag - Mèo Vạc", "quality_score": 5},
+      {"video_id": "IMG_6411", "file": "IMG_6411.mov", "duration": 14.1, "description": "Tall pine tree on winding road amidst misty mountains", "quality_score": 4},
+      {"video_id": "IMG_6373", "file": "IMG_6373.mov", "duration": 11.4, "description": "Cherry blossoms in full bloom - spring outdoor scene", "quality_score": 4}
+    ],
+    "driving_road": [
+      {"video_id": "IMG_6125", "file": "IMG_6125.mov", "duration": 4.6, "description": "Dashboard view of foggy road with motorbike ahead", "quality_score": 2},
+      {"video_id": "IMG_6128", "file": "IMG_6128.mov", "duration": 15, "description": "Inside car driving through hilly countryside on overcast day", "quality_score": 3},
+      {"video_id": "IMG_6127", "file": "IMG_6127.mov", "duration": 23.4, "description": "Inside car driving on overcast day with limited fog visibility", "quality_score": 3},
+      {"video_id": "IMG_6129", "file": "IMG_6129.mov", "duration": 11.9, "description": "Inside car on winding mountain road - adventurous mood", "quality_score": 3},
+      {"video_id": "IMG_6130", "file": "IMG_6130.mov", "duration": 12.1, "description": "Truck on winding road with hills and vegetation", "quality_score": 3},
+      {"video_id": "IMG_6243", "file": "IMG_6243.mov", "duration": 30.5, "description": "Moving vehicle on empty winding road with trees and mountains", "quality_score": 4},
+      {"video_id": "IMG_6245", "file": "IMG_6245.mov", "duration": 29.4, "description": "Foggy mountain landscape with winding road", "quality_score": 4},
+      {"video_id": "IMG_6246", "file": "IMG_6246.mov", "duration": 25.9, "description": "Foggy road leading into distance with caution sign", "quality_score": 4},
+      {"video_id": "IMG_6247", "file": "IMG_6247.mov", "duration": 20.3, "description": "Foggy rural road with motorcyclist in distance - mystical mood", "quality_score": 4},
+      {"video_id": "IMG_6258", "file": "IMG_6258.mov", "duration": 19.3, "description": "Winding road through misty mountainous landscape", "quality_score": 4},
+      {"video_id": "IMG_6259", "file": "IMG_6259.mov", "duration": 11.6, "description": "Winding road through misty mountain landscape", "quality_score": 4},
+      {"video_id": "IMG_6297 (1)", "file": "IMG_6297 (1).mov", "duration": 16.1, "description": "Winding road with water tower in distance on overcast day", "quality_score": 3},
+      {"video_id": "IMG_6301 (1)", "file": "IMG_6301 (1).mov", "duration": 9.2, "description": "Tranquil road through mountainous landscape", "quality_score": 3},
+      {"video_id": "IMG_6302 (1)", "file": "IMG_6302 (1).mov", "duration": 37.1, "description": "Winding road through mountains with lush greenery and motorcyclists", "quality_score": 5},
+      {"video_id": "IMG_6303 (1)", "file": "IMG_6303 (1).mov", "duration": 34.6, "description": "Cloudy day on winding rural road with lush greenery and hills", "quality_score": 3},
+      {"video_id": "IMG_6304 (1)", "file": "IMG_6304 (1).mov", "duration": 82.2, "description": "Winding road through mountains on overcast day - long driving shot", "quality_score": 4},
+      {"video_id": "IMG_6307", "file": "IMG_6307.mov", "duration": 40.2, "description": "Rural road with truck and lush green hills", "quality_score": 3},
+      {"video_id": "IMG_6309 (1)", "file": "IMG_6309 (1).mov", "duration": 50.5, "description": "Motorcyclist on winding mountain road with dense fog and greenery", "quality_score": 5},
+      {"video_id": "IMG_6311 (1)", "file": "IMG_6311 (1).mov", "duration": 18.8, "description": "Winding road through hilly landscape on overcast day", "quality_score": 3},
+      {"video_id": "IMG_6312 (1)", "file": "IMG_6312 (1).mov", "duration": 28.4, "description": "Foggy road with signs and truck - moody atmosphere", "quality_score": 3},
+      {"video_id": "IMG_6313 (1)", "file": "IMG_6313 (1).mov", "duration": 4.5, "description": "Motorcyclists on winding mountain road in foggy weather", "quality_score": 3},
+      {"video_id": "IMG_6314", "file": "IMG_6314.mov", "duration": 72, "description": "Motorcycle rider on winding mountain road with dense fog and greenery - long tracking", "quality_score": 5},
+      {"video_id": "IMG_6315 (1)", "file": "IMG_6315 (1).mov", "duration": 31.7, "description": "Winding road leading up to mountain shrouded in mist", "quality_score": 4},
+      {"video_id": "IMG_6316", "file": "IMG_6316.mov", "duration": 10.8, "description": "Inside vehicle on winding road through mountainous terrain", "quality_score": 3},
+      {"video_id": "IMG_6317", "file": "IMG_6317.mov", "duration": 5.9, "description": "Car window view of winding mountain road on overcast day", "quality_score": 3},
+      {"video_id": "IMG_6318", "file": "IMG_6318.mov", "duration": 80.5, "description": "Winding mountain road with car and lush greenery - long clip with songs", "quality_score": 4},
+      {"video_id": "IMG_6369", "file": "IMG_6369.mov", "duration": 24.6, "description": "Scenic mountain road with motorcyclists", "quality_score": 4},
+      {"video_id": "IMG_6376", "file": "IMG_6376.mov", "duration": 14.9, "description": "Road through hilly terrain with red flags and street lamps - slow pan", "quality_score": 4},
+      {"video_id": "IMG_6410", "file": "IMG_6410.mov", "duration": 41.9, "description": "Misty mountain road with red buildings - blurred atmospheric", "quality_score": 3},
+      {"video_id": "IMG_6422", "file": "IMG_6422.mov", "duration": 19, "description": "Misty mountain view with winding road leading up", "quality_score": 4},
+      {"video_id": "IMG_6423", "file": "IMG_6423.mov", "duration": 43.2, "description": "Motorcyclists on winding mountain road with misty mountains - mystical", "quality_score": 5},
+      {"video_id": "IMG_6134", "file": "IMG_6134.mov", "duration": 46.3, "description": "Moving vehicle overlooking dense forest-covered hills through windshield", "quality_score": 3},
+      {"video_id": "IMG_6300 (1)", "file": "IMG_6300 (1).mov", "duration": 10.5, "description": "Vehicle through rural terrain with dense vegetation - dirt road", "quality_score": 3},
+      {"video_id": "IMG_6133", "file": "IMG_6133.mov", "duration": 11.1, "description": "Road with distant billboard and light traffic on overcast day", "quality_score": 2},
+      {"video_id": "IMG_6131", "file": "IMG_6131.mov", "duration": 12.8, "description": "Worker oversees construction on mountain road", "quality_score": 3}
+    ],
+    "family_people": [
+      {"video_id": "IMG_6200", "file": "IMG_6200.mov", "duration": 20, "description": "Young child walking in park with trees and pathways - curious mood", "quality_score": 4},
+      {"video_id": "IMG_6328", "file": "IMG_6328.mov", "duration": 65.9, "description": "Man and child walking on stone path towards scenic overlook - family adventure", "quality_score": 5},
+      {"video_id": "IMG_6342", "file": "IMG_6342.mov", "duration": 90.2, "description": "Person assisting child on rocky mountain path - heartwarming", "quality_score": 5},
+      {"video_id": "IMG_6396", "file": "IMG_6396.mov", "duration": 35.2, "description": "Child in bear costume attempting to open wooden door with old lock - adorable", "quality_score": 5},
+      {"video_id": "IMG_6385", "file": "IMG_6385.mov", "duration": 44.9, "description": "Man and child walking in old village with traditional architecture", "quality_score": 5},
+      {"video_id": "IMG_6428", "file": "IMG_6428.mov", "duration": 18.3, "description": "Child sitting on stool overlooking clouds from elevated viewpoint", "quality_score": 5},
+      {"video_id": "IMG_6460", "file": "IMG_6460.mov", "duration": 20.6, "description": "Young child sleeping in car seat - tender moment", "quality_score": 4},
+      {"video_id": "IMG_6468", "file": "IMG_6468.mov", "duration": 20.6, "description": "Child on potty training seat outdoors with adult nearby", "quality_score": 2},
+      {"video_id": "IMG_6471", "file": "IMG_6471.mov", "duration": 14.2, "description": "Child in parking garage with cars and service signs", "quality_score": 2},
+      {"video_id": "IMG_6414", "file": "IMG_6414.mov", "duration": 4.2, "description": "Two people in car with colorful headwear and winter clothing - happy mood", "quality_score": 3},
+      {"video_id": "IMG_6429", "file": "IMG_6429.mov", "duration": 23.1, "description": "Person with colorful headscarf on outdoor balcony looking at distance", "quality_score": 4},
+      {"video_id": "IMG_6436", "file": "IMG_6436.mov", "duration": 10.2, "description": "Person with colorful scarf overlooking scenic viewpoint", "quality_score": 4},
+      {"video_id": "IMG_6305", "file": "IMG_6305.mov", "duration": 29.2, "description": "Family enjoying day at park with tents and activities - Đồng Nai", "quality_score": 4},
+      {"video_id": "IMG_6352", "file": "IMG_6352.mov", "duration": 231.7, "description": "Group of people ascending stone staircase in outdoor garden setting", "quality_score": 4},
+      {"video_id": "IMG_6298", "file": "IMG_6298.mov", "duration": 33.9, "description": "Motorcyclist with dog on back traveling through mountains - charming", "quality_score": 5},
+      {"video_id": "IMG_7035", "file": "IMG_7035.mov", "duration": 74.8, "description": "Woman and child walking out of traditional wooden building onto cobblestone - Sà Phìn", "quality_score": 5}
+    ],
+    "cultural_village": [
+      {"video_id": "IMG_6364", "file": "IMG_6364.mov", "duration": 49.3, "description": "Rustic wooden structure with thatched roof and weathered beams - traditional architecture", "quality_score": 5},
+      {"video_id": "IMG_6385", "file": "IMG_6385.mov", "duration": 44.9, "description": "Old village with traditional architecture - nostalgic walking tour", "quality_score": 5},
+      {"video_id": "IMG_6389", "file": "IMG_6389.mov", "duration": 48.3, "description": "Narrow dirt path through rustic village with wooden houses and stone walls", "quality_score": 5},
+      {"video_id": "IMG_6392", "file": "IMG_6392.mov", "duration": 79.4, "description": "People walking through dimly lit street at night - cultural atmosphere", "quality_score": 4},
+      {"video_id": "IMG_6257", "file": "IMG_6257.mov", "duration": 7.9, "description": "Quiet street in tropical village shrouded by mist and greenery", "quality_score": 4},
+      {"video_id": "IMG_6244", "file": "IMG_6244.mov", "duration": 13.2, "description": "Roadside signboard welcoming travelers to Quan Ba village", "quality_score": 3},
+      {"video_id": "IMG_6375", "file": "IMG_6375.mov", "duration": 6.5, "description": "Welcoming entrance gate to Long Cu Khinh in Vietnam", "quality_score": 3},
+      {"video_id": "IMG_7036", "file": "IMG_7036.mov", "duration": 7.2, "description": "Traveler in white dress looking at old wooden building - Sà Phìn", "quality_score": 4},
+      {"video_id": "IMG_7035", "file": "IMG_7035.mov", "duration": 74.8, "description": "Woman and child exiting traditional wooden building onto cobblestone - Sà Phìn cultural", "quality_score": 5},
+      {"video_id": "IMG_6394", "file": "IMG_6394.mov", "duration": 5.2, "description": "Cozy indoor scene with rustic decor and people on rocking chairs", "quality_score": 3}
+    ],
+    "nature_flora": [
+      {"video_id": "IMG_6132", "file": "IMG_6132.mov", "duration": 17.9, "description": "Person sitting on rocky terrain with vegetation - peaceful nature", "quality_score": 3},
+      {"video_id": "IMG_6373", "file": "IMG_6373.mov", "duration": 11.4, "description": "Cherry blossoms in full bloom - spring beauty", "quality_score": 4},
+      {"video_id": "IMG_6377", "file": "IMG_6377.mov", "duration": 30.2, "description": "Hillside with blooming pink flowers and flag atop peak", "quality_score": 5},
+      {"video_id": "IMG_6372", "file": "IMG_6372.mov", "duration": 17, "description": "Forested hillside with road sign - nature and forestry", "quality_score": 3},
+      {"video_id": "IMG_6134", "file": "IMG_6134.mov", "duration": 46.3, "description": "Dense forest-covered hills - serene nature view", "quality_score": 3},
+      {"video_id": "IMG_6138", "file": "IMG_6138.mov", "duration": 6.3, "description": "Blurry roadside with dense foliage and power lines - fast pan", "quality_score": 2},
+      {"video_id": "IMG_6299 (1)", "file": "IMG_6299 (1).mov", "duration": 69.7, "description": "Blurred greenery through moving vehicle window", "quality_score": 2},
+      {"video_id": "IMG_6411", "file": "IMG_6411.mov", "duration": 14.1, "description": "Tall pine tree on winding road amidst misty mountains", "quality_score": 4}
+    ],
+    "atmospheric_mood": [
+      {"video_id": "IMG_6260", "file": "IMG_6260.mov", "duration": 23.7, "description": "Misty mountain landscape with road disappearing into fog - epic mood", "quality_score": 5},
+      {"video_id": "IMG_6246", "file": "IMG_6246.mov", "duration": 25.9, "description": "Foggy road leading into distance with caution sign - mysterious", "quality_score": 4},
+      {"video_id": "IMG_6247", "file": "IMG_6247.mov", "duration": 20.3, "description": "Foggy rural road with distant motorcyclist - mystical atmosphere", "quality_score": 4},
+      {"video_id": "IMG_6249", "file": "IMG_6249.mov", "duration": 28.8, "description": "Foggy roadside to heavy rain through windshield - dramatic weather shift", "quality_score": 4},
+      {"video_id": "IMG_6457", "file": "IMG_6457.mov", "duration": 46.4, "description": "Heavy fog through vehicle window with trees partially obscured - mysterious", "quality_score": 4},
+      {"video_id": "IMG_6309 (1)", "file": "IMG_6309 (1).mov", "duration": 50.5, "description": "Motorcyclist on winding mountain road with dense fog - mysterious tracking", "quality_score": 5},
+      {"video_id": "IMG_6314", "file": "IMG_6314.mov", "duration": 72, "description": "Motorcycle rider in dense fog on mountain road - long atmospheric tracking", "quality_score": 5},
+      {"video_id": "IMG_6423", "file": "IMG_6423.mov", "duration": 43.2, "description": "Motorcyclists in misty mountains - mystical mood", "quality_score": 5},
+      {"video_id": "IMG_6258", "file": "IMG_6258.mov", "duration": 19.3, "description": "Winding road through misty mountains - mysterious", "quality_score": 4},
+      {"video_id": "IMG_6259", "file": "IMG_6259.mov", "duration": 11.6, "description": "Winding road through misty mountain landscape", "quality_score": 4},
+      {"video_id": "IMG_6264", "file": "IMG_6264.mov", "duration": 27.9, "description": "Person on foggy mountain peak - reflective solitude", "quality_score": 5},
+      {"video_id": "IMG_6392", "file": "IMG_6392.mov", "duration": 79.4, "description": "Dimly lit street at night - moody village night walk", "quality_score": 4},
+      {"video_id": "IMG_7039", "file": "IMG_7039.mov", "duration": 17.7, "description": "Viewing platform overlooking misty mountains with red flag - Mèo Vạc", "quality_score": 5},
+      {"video_id": "IMG_6410", "file": "IMG_6410.mov", "duration": 41.9, "description": "Blurred misty mountain road with red buildings", "quality_score": 3},
+      {"video_id": "IMG_6422", "file": "IMG_6422.mov", "duration": 19, "description": "Misty mountain with winding road - serene foggy scene", "quality_score": 4}
+    ],
+    "food_lifestyle": [
+      {"video_id": "IMG_6229", "file": "IMG_6229.mov", "duration": 6.3, "description": "Plate of food with various condiments and utensils - homely meal", "quality_score": 3},
+      {"video_id": "IMG_6394", "file": "IMG_6394.mov", "duration": 5.2, "description": "Cozy indoor scene with rustic decor and people relaxing on rocking chairs", "quality_score": 3},
+      {"video_id": "IMG_6466", "file": "IMG_6466.mov", "duration": 32.4, "description": "Person at convenience store from inside car - road trip life", "quality_score": 2}
+    ],
+    "camping_outdoor": [
+      {"video_id": "IMG_6299", "file": "IMG_6299.mov", "duration": 124.5, "description": "Person setting up tent in lush green camping area near water - Đồng Nai", "quality_score": 4},
+      {"video_id": "IMG_6304", "file": "IMG_6304.mov", "duration": 3.2, "description": "Family setting up camp in lush green park - Đồng Nai", "quality_score": 2},
+      {"video_id": "IMG_6305", "file": "IMG_6305.mov", "duration": 29.2, "description": "Family at park with tents and activities - Đồng Nai", "quality_score": 4},
+      {"video_id": "IMG_6315", "file": "IMG_6315.mov", "duration": 1, "description": "Spacious camping tent with equipment - Đồng Nai", "quality_score": 2},
+      {"video_id": "IMG_6329", "file": "IMG_6329.mov", "duration": 158.9, "description": "Serene mountain trail leading to scenic overlook - long hiking clip", "quality_score": 4},
+      {"video_id": "IMG_7010", "file": "IMG_7010.mov", "duration": 8.8, "description": "Hiker on narrow mountain path - Sà Phìn", "quality_score": 4},
+      {"video_id": "IMG_6132", "file": "IMG_6132.mov", "duration": 17.9, "description": "Person on rocky terrain with vegetation - outdoor relaxation", "quality_score": 3}
+    ]
+  },
+  "best_clips": {
+    "hero_shots": [
+      {"video_id": "IMG_6260", "reason": "Epic misty mountain landscape with road vanishing into fog - 24s, cinematic, perfect for wide establishing"},
+      {"video_id": "IMG_6264", "reason": "Person standing on foggy mountain peak - 28s, deeply reflective, iconic travel imagery"},
+      {"video_id": "IMG_6296 (1)", "reason": "Misty village nestled in mountain valley - 11s, classic Ha Giang postcard shot"},
+      {"video_id": "IMG_6371", "reason": "Mountain road with rustic buildings under clear blue sky - 44s, best weather/lighting in collection"},
+      {"video_id": "IMG_6377", "reason": "Hillside with blooming pink flowers and flag on peak - 30s, vibrant colors, uplifting"},
+      {"video_id": "IMG_7039", "reason": "Viewing platform over misty mountains with red flag at Mèo Vạc - 18s, iconic landmark"},
+      {"video_id": "IMG_7007", "reason": "Misty mountain village in Cán Tỷ - 32s, authentic highland atmosphere with GPS location"},
+      {"video_id": "IMG_6309 (1)", "reason": "Motorcyclist on foggy winding mountain road - 51s, dramatic tracking shot, quintessential Ha Giang"},
+      {"video_id": "IMG_6314", "reason": "Long motorcycle tracking on foggy mountain road - 72s, immersive and cinematic"},
+      {"video_id": "IMG_6423", "reason": "Motorcyclists in mystical misty mountains - 43s, beautiful atmosphere and tracking motion"}
+    ],
+    "opening_hooks": [
+      {"video_id": "IMG_6260", "reason": "Misty mountain road into fog - immediately sets tone of mystery and adventure"},
+      {"video_id": "IMG_6309 (1)", "reason": "Motorcyclist emerging from fog on mountain pass - dramatic and attention-grabbing"},
+      {"video_id": "IMG_6246", "reason": "Foggy road with caution sign - builds mystery and curiosity"},
+      {"video_id": "IMG_6377", "reason": "Pink flowers on hillside with flag - beautiful, colorful hook that intrigues"},
+      {"video_id": "IMG_6264", "reason": "Person on mountain peak in fog - immediately emotional and aspirational"},
+      {"video_id": "IMG_6423", "reason": "Motorcyclists in mystic mountains - cinematic opener with movement"},
+      {"video_id": "IMG_6135", "reason": "Limestone karsts with railway - unique visual that stops scrolling"}
+    ],
+    "closing_shots": [
+      {"video_id": "IMG_6264", "reason": "Person on foggy peak - perfect reflective ending shot"},
+      {"video_id": "IMG_6260", "reason": "Road disappearing into fog - metaphorical journey ending"},
+      {"video_id": "IMG_6428", "reason": "Child overlooking clouds from elevated viewpoint - hopeful and serene"},
+      {"video_id": "IMG_6460", "reason": "Child sleeping in car seat - peaceful end to adventure day"},
+      {"video_id": "IMG_7007", "reason": "Misty village in valley - calm, contemplative final frame"},
+      {"video_id": "IMG_6329", "reason": "Mountain trail to scenic overlook - journey completion feeling"}
+    ],
+    "emotional_moments": [
+      {"video_id": "IMG_6342", "reason": "Parent helping child on rocky mountain path - 90s of pure family bonding"},
+      {"video_id": "IMG_6328", "reason": "Father and child walking together toward scenic overlook - shared discovery"},
+      {"video_id": "IMG_6396", "reason": "Child in bear costume trying to open old door - pure childhood curiosity"},
+      {"video_id": "IMG_6385", "reason": "Father and child exploring old traditional village - intergenerational moment"},
+      {"video_id": "IMG_6428", "reason": "Child sitting alone overlooking clouds - contemplative, wonder-filled"},
+      {"video_id": "IMG_6460", "reason": "Child sleeping peacefully in car seat after adventure - tender quiet"},
+      {"video_id": "IMG_6298", "reason": "Motorcyclist with dog on back through mountains - heartwarming and unique"},
+      {"video_id": "IMG_7035", "reason": "Mother and child at traditional building in Sà Phìn - cultural family moment"},
+      {"video_id": "IMG_6200", "reason": "Young child walking curiously in park - innocent exploration"},
+      {"video_id": "IMG_6429", "reason": "Person with headscarf on balcony looking at distance - quiet reflection with fearful child dialogue"}
+    ]
+  },
+  "technical_notes": {
+    "vertical_native": [
+      "IMG_6126", "IMG_6125", "IMG_6128", "IMG_6127", "IMG_6129", "IMG_6131", "IMG_6130",
+      "IMG_6132", "IMG_6133", "IMG_6135", "IMG_6138", "IMG_6200", "IMG_6229", "IMG_6238",
+      "IMG_6239", "IMG_6240", "IMG_6199", "IMG_6241", "IMG_6242", "IMG_6244", "IMG_6243",
+      "IMG_6246", "IMG_6247", "IMG_6134", "IMG_6249", "IMG_6257", "IMG_6258", "IMG_6259",
+      "IMG_6260", "IMG_6264", "IMG_6296 (1)", "IMG_6296", "IMG_6297 (1)", "IMG_6245",
+      "IMG_6298", "IMG_6299 (1)", "IMG_6299", "IMG_6300 (1)", "IMG_6301 (1)", "IMG_6302 (1)",
+      "IMG_6248", "IMG_6304", "IMG_6305", "IMG_6303 (1)", "IMG_6308 (1)", "IMG_6309 (1)",
+      "IMG_6310 (1)", "IMG_6311 (1)", "IMG_6307", "IMG_6313 (1)", "IMG_6312 (1)", "IMG_6315 (1)",
+      "IMG_6315", "IMG_6304 (1)", "IMG_6316", "IMG_6317", "IMG_6318", "IMG_6314", "IMG_6327",
+      "IMG_6328", "IMG_6323", "IMG_6342", "IMG_6364", "IMG_6352", "IMG_6329", "IMG_6371",
+      "IMG_6372", "IMG_6373", "IMG_6369", "IMG_6376", "IMG_6375", "IMG_6377", "IMG_6385",
+      "IMG_6389", "IMG_6392", "IMG_6394", "IMG_6410", "IMG_6411", "IMG_6412", "IMG_6370",
+      "IMG_6417", "IMG_6419", "IMG_6418", "IMG_6422", "IMG_6396", "IMG_6428", "IMG_6436",
+      "IMG_6429", "IMG_6458", "IMG_6460", "IMG_6457", "IMG_6465", "IMG_6466", "IMG_6468",
+      "IMG_6462", "IMG_6471", "IMG_7006", "IMG_7007", "IMG_7010", "IMG_6470", "IMG_7036",
+      "IMG_7035", "IMG_7039", "IMG_6423"
+    ],
+    "horizontal": [
+      "IMG_6414"
+    ],
+    "near_square": [
+      "ScreenRecording_12-28-2025 12-29-13_1"
+    ],
+    "has_usable_audio": [
+      {"video_id": "IMG_6127", "note": "Family conversation in car - greeting mother, vi speech"},
+      {"video_id": "IMG_6128", "note": "Natural in-car dialogue, vi speech"},
+      {"video_id": "IMG_6245", "note": "Children playing/singing mixed with Vietnamese, long clip"},
+      {"video_id": "IMG_6327", "note": "Excited commentary about mountains being like dinosaurs - emotional vi narration"},
+      {"video_id": "IMG_6328", "note": "Father/child exclaiming about beauty - 'Đẹp quá!' - genuine reactions"},
+      {"video_id": "IMG_6364", "note": "Discussion about Mèo King palace, cultural narration"},
+      {"video_id": "IMG_6371", "note": "Discussing geological formations and limestone - educational narration"},
+      {"video_id": "IMG_6377", "note": "Excited about arriving at Lolo village destination"},
+      {"video_id": "IMG_6396", "note": "Parent guiding child through old door - heartwarming dialogue"},
+      {"video_id": "IMG_6429", "note": "Child expressing fear at viewpoint - authentic emotional moment"},
+      {"video_id": "IMG_6457", "note": "Long conversation during foggy drive - authentic road trip vibes"},
+      {"video_id": "IMG_6242", "note": "English child dialogue - 'Are you hungry? Yum yum'"},
+      {"video_id": "IMG_6318", "note": "Children singing in car 'choo choo train' - joyful audio"},
+      {"video_id": "IMG_6410", "note": "English child dialogue - 'Do you want to go down?'"},
+      {"video_id": "IMG_6305", "note": "Family camping setup conversation - domestic warmth"},
+      {"video_id": "IMG_6342", "note": "Parent helping child on mountain path - encouraging words"}
+    ],
+    "needs_stabilization": [
+      {"video_id": "IMG_6138", "note": "Fast pan with heavy blur - roadside foliage"},
+      {"video_id": "IMG_6299 (1)", "note": "Fast pan through vehicle window - heavily blurred greenery"},
+      {"video_id": "IMG_6302 (1)", "note": "Handheld moving on mountain road - some shake"},
+      {"video_id": "IMG_6300 (1)", "note": "Handheld moving through rural terrain"},
+      {"video_id": "IMG_6243", "note": "Handheld moving on winding road"},
+      {"video_id": "IMG_6135", "note": "Handheld moving past karst formations"},
+      {"video_id": "IMG_6392", "note": "Handheld moving through dark street at night"},
+      {"video_id": "IMG_6465", "note": "Handheld moving close-up - cluttered, dark"},
+      {"video_id": "IMG_6458", "note": "Handheld moving - train window blur"},
+      {"video_id": "IMG_6410", "note": "Blurred view - handheld static but soft focus throughout"}
+    ]
+  }
+}

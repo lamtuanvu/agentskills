@@ -10,7 +10,10 @@ To pause the SpecKit orchestrator pipeline (so the stop hook stops auto-continui
 
 1. Run the orchestrator cancel command:
    ```bash
-   python skills/development/speckit-orchestrator/scripts/orchestrator.py cancel
+   SCRIPTS_DIR="${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts"
+   [ -d "$SCRIPTS_DIR" ] || SCRIPTS_DIR="${AGENTSKILLS_ROOT:-}/skills/speckit-orchestrator/scripts"
+   [ -d "$SCRIPTS_DIR" ] || { echo "Error: speckit scripts not found. Set AGENTSKILLS_ROOT." >&2; exit 1; }
+   python "$SCRIPTS_DIR/orchestrator.py" cancel
    ```
 
 2. Report the result to the user.

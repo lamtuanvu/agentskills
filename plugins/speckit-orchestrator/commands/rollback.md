@@ -22,7 +22,10 @@ Reset the SpecKit pipeline to a specific step, marking that step and all subsequ
 
 1. Run the orchestrator rollback command:
    ```bash
-   python plugins/speckit-orchestrator/scripts/orchestrator.py rollback <step>
+   SCRIPTS_DIR="${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts"
+   [ -d "$SCRIPTS_DIR" ] || SCRIPTS_DIR="${AGENTSKILLS_ROOT:-}/skills/speckit-orchestrator/scripts"
+   [ -d "$SCRIPTS_DIR" ] || { echo "Error: speckit scripts not found. Set AGENTSKILLS_ROOT." >&2; exit 1; }
+   python "$SCRIPTS_DIR/orchestrator.py" rollback <step>
    ```
 
 2. Show confirmation and updated progress to the user.

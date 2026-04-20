@@ -19,7 +19,10 @@ Show the current progress of the SpecKit pipeline for a feature.
 
 1. Run the orchestrator status command:
    ```bash
-   python plugins/speckit-orchestrator/scripts/orchestrator.py status [feature-name]
+   SCRIPTS_DIR="${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts"
+   [ -d "$SCRIPTS_DIR" ] || SCRIPTS_DIR="${AGENTSKILLS_ROOT:-}/skills/speckit-orchestrator/scripts"
+   [ -d "$SCRIPTS_DIR" ] || { echo "Error: speckit scripts not found. Set AGENTSKILLS_ROOT." >&2; exit 1; }
+   python "$SCRIPTS_DIR/orchestrator.py" status [feature-name]
    ```
    If no feature name is provided, it auto-detects from the current branch.
 
@@ -27,5 +30,5 @@ Show the current progress of the SpecKit pipeline for a feature.
 
 3. If there is an active team phase, also run:
    ```bash
-   python plugins/speckit-orchestrator/scripts/orchestrator.py team-status
+   python "$SCRIPTS_DIR/orchestrator.py" team-status
    ```
