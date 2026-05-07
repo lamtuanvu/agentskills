@@ -203,7 +203,7 @@ jobs:
           git add -A
           git commit -m "chore(release): pump versions [skip ci]"
           for tag in ${{ steps.pump.outputs.tags }}; do
-            git tag "$tag"
+            git tag -a "$tag" -m "release $tag"
           done
-          git tag "v${{ steps.pump.outputs.root_version }}"
+          git tag -a "v${{ steps.pump.outputs.root_version }}" -m "release v${{ steps.pump.outputs.root_version }}"
           git push origin HEAD:main --follow-tags
