@@ -1,13 +1,13 @@
 {
   "name": "lamtuanvu-marketplace",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Agent skills marketplace — portable skills for AI coding agents, plus Claude Code plugins",
   "owner": {
     "name": "lamtuanvu",
     "github": "lamtuanvu"
   },
   "metadata": {
-    "version": "1.1.0",
+    "version": "1.2.0",
     "pluginRoot": "./plugins"
   },
   "plugins": [

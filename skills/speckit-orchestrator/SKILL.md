@@ -5,7 +5,7 @@ argument-hint: "<feature-name> or path to idea.md"
 allowed-tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 metadata:
   author: lamtuanvu
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # SpecKit Orchestrator
