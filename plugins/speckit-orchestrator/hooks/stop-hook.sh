@@ -195,15 +195,27 @@ fi
 
 # -------------------------------------------------------------------
 # 7. Define step order and read statuses
-#    Conditionally include plan-review based on teams_enabled
+#    Conditionally include plan-review based on teams_enabled.
+#    Always include test-and-fix.
+#    Conditionally include review-loop based on review_loop_enabled.
 # -------------------------------------------------------------------
 TEAMS_ENABLED=$(echo "$STATE" | jq -r '.teams_enabled // false')
+REVIEW_LOOP_ENABLED=$(echo "$STATE" | jq -r '.review_loop_enabled // false')
 
 if [[ "$TEAMS_ENABLED" == "true" ]]; then
   STEPS=("specify" "clarify" "plan" "plan-review" "tasks" "analyze" "implement")
 else
   STEPS=("specify" "clarify" "plan" "tasks" "analyze" "implement")
 fi
+
+# test-and-fix always runs (it is not optional — all features must pass tests)
+STEPS+=("test-and-fix")
+
+# review-loop is opt-in
+if [[ "$REVIEW_LOOP_ENABLED" == "true" ]]; then
+  STEPS+=("review-loop")
+fi
+
 TOTAL_STEPS=${#STEPS[@]}
 
 # Check for any failed step → allow stop
@@ -362,10 +374,14 @@ fi
 _dbg "BLOCK: auto-continue to $NEXT_STEP (completed=$COMPLETED_COUNT)"
 STEP_NUMBER=$((COMPLETED_COUNT + 1))
 
-# Add team indicator for team steps
+# Add team indicator for team steps; loop indicator for fix/review steps
 STEP_LABEL="$NEXT_STEP"
 if [[ "$TEAMS_ENABLED" == "true" ]] && { [[ "$NEXT_STEP" == "plan-review" ]] || [[ "$NEXT_STEP" == "implement" ]]; }; then
   STEP_LABEL="${NEXT_STEP} ⚡"
+elif [[ "$NEXT_STEP" == "test-and-fix" ]]; then
+  STEP_LABEL="test-and-fix 🔁"
+elif [[ "$NEXT_STEP" == "review-loop" ]]; then
+  STEP_LABEL="review-loop 🔁"
 fi
 
 jq -n \

@@ -99,6 +99,52 @@ describe('<ComponentOrFunction>', () => {
 - Don't mock the unit under test
 - Keep mocks minimal — only mock what's necessary
 
+### Phase 6: Write Agentic E2E Scenarios (Conditional)
+
+Check if `.specify/memory/project-config.json` exists and contains `"agentic_validation_enabled": true`.
+
+If yes:
+1. Read `docs/features/<feature>/idea.md` — extract all user stories and success criteria
+2. Write `lib/testing/scenarios/<feature>.yaml` following this DSL:
+
+```yaml
+scenarios:
+  - name: "Descriptive scenario name matching a user story"
+    steps:
+      - navigate_to: "/path-or-url"
+      - wait_for: "[data-testid='content-loaded']"  # optional wait
+      - assert:
+          type: element_visible
+          selector: ".expected-element"
+      - assert:
+          type: network_request_made
+          url_pattern: "/api/endpoint"
+      - assert:
+          type: ai_judge
+          pass: "Describe the expected visual/behavioral state in plain English"
+      - assert:
+          type: url_is
+          expected: "/expected-path"
+      - assert:
+          type: no_mockup_badge  # checks no placeholder/WIP indicators visible
+```
+
+**Assertion types:**
+- `element_visible` — checks a CSS selector is visible in the DOM
+- `network_request_made` — checks an API call was made matching the URL pattern
+- `url_is` — checks the current URL equals the expected value
+- `ai_judge` — uses AI to evaluate a plain-English description of the expected state; use for complex behavioral assertions
+- `no_mockup_badge` — verifies no placeholder/mockup/WIP badges are visible
+
+**Coverage requirements:**
+- Write at minimum one scenario per user story in idea.md
+- Cover: happy path, error state (what happens when something fails), auth-gated paths (if applicable)
+- Prefer `ai_judge` for assertions that are hard to express as DOM selectors
+
+If `agentic_validation_enabled` is false or project-config.json does not exist, skip Phase 6.
+
+---
+
 ## Completion
 
 After writing all tests:
@@ -107,6 +153,7 @@ After writing all tests:
    - Integration tests
    - E2E tests — backend
    - E2E tests — frontend
+   - Agentic E2E scenarios: `lib/testing/scenarios/<feature>.yaml` (if applicable)
 2. Note any tests that are skeletons/TODO (pending implementation details)
 3. Note any spec requirements that couldn't be tested (and why)
 4. Note any e2e frameworks that need to be installed/configured

@@ -254,6 +254,18 @@ Branch name always follows the pattern `NNN-feature-name` (e.g., `001-dark-mode-
 
 **Step 5.3: Create `orchestrator-state.json`**
 
+First, read project defaults from `.specify/memory/project-config.json` if it exists:
+```bash
+[ -f ".specify/memory/project-config.json" ] && cat .specify/memory/project-config.json || echo "{}"
+```
+
+Extract these values (falling back to defaults if the file doesn't exist or the key is missing):
+- `teams_enabled` → default `true`
+- `agentic_validation_enabled` → default `false`
+- `review_loop_enabled` → default `false`
+
+Build the step_status object: always include all 7 core steps + `test-and-fix`. Include `review-loop` only if `review_loop_enabled` is true.
+
 Write the state file to `docs/features/<feature-name>/orchestrator-state.json`:
 
 ```json
@@ -270,21 +282,30 @@ Write the state file to `docs/features/<feature-name>/orchestrator-state.json`:
     "plan-review": "pending",
     "tasks": "pending",
     "analyze": "pending",
-    "implement": "pending"
+    "implement": "pending",
+    "test-and-fix": "pending",
+    "review-loop": "pending"
   },
   "started_at": "<ISO8601>",
   "last_updated": "<ISO8601>",
   "teams_enabled": true,
+  "agentic_validation_enabled": false,
+  "review_loop_enabled": false,
+  "test_fix_iterations": 0,
+  "review_loop_iterations": 0,
   "team_state": null
 }
 ```
+
+Note: `"plan-review": "pending"` is included regardless of `teams_enabled` — the execute command skips it at runtime when teams are disabled. `"review-loop": "pending"` is included only if `review_loop_enabled` is true; otherwise omit it from `step_status`.
 
 **Step 5.4: Verify the state file**
 
 Read back the state file and confirm:
 - `current_step` is `"specify"`
-- All 7 steps are present and `"pending"`
+- All core steps are present and `"pending"` (7 core + `test-and-fix` + `review-loop` if enabled)
 - `idea_file` path matches the idea.md you wrote
+- `agentic_validation_enabled` and `review_loop_enabled` match the project-config.json values
 
 ### Step 6: Report and Wait for User
 
@@ -307,7 +328,7 @@ BRAINSTORMING COMPLETE
    3. Created orchestrator-state.json (7 steps, starting at specify)
    4. Verified state file
 
-Pipeline: specify → clarify → plan → plan-review → tasks → analyze → implement
+Pipeline: specify → clarify → plan → [plan-review] → tasks → analyze → implement → test-and-fix → [review-loop]
           ^
      Starting here
 

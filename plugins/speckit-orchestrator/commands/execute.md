@@ -1,5 +1,5 @@
 ---
-description: "Execute the next step in the SpecKit pipeline (specify->clarify->plan->plan-review->tasks->analyze->implement). Supports agent-teams for parallel plan review and implementation. Assumes idea.md exists."
+description: "Execute the next step in the SpecKit pipeline (specify->clarify->plan->plan-review->tasks->analyze->implement->test-and-fix->review-loop). Supports agent-teams for parallel plan review and implementation. Assumes idea.md exists."
 allowed-tools: ["Bash(python *orchestrator.py*)", "Bash(python *partition_tasks.py*)", "Bash(python *verify_state.py*)", "Read(docs/features/*/orchestrator-state.json)", "Read(docs/features/*/idea.md)", "Read(specs/*/spec.md)", "Read(specs/*/plan.md)", "Read(specs/*/tasks.md)"]
 ---
 
@@ -10,10 +10,11 @@ allowed-tools: ["Bash(python *orchestrator.py*)", "Bash(python *partition_tasks.
 This command executes the next step in the SpecKit pipeline for feature development:
 
 ```
-specify → clarify → plan → [plan-review] → tasks → analyze → implement
-                             ^                                  ^
-                        Team phase (parallel           Team phase (parallel
-                        specialist reviews)            implementation + tests)
+specify → clarify → plan → [plan-review] → tasks → analyze → implement → test-and-fix → [review-loop]
+                             ^                                  ^              ^               ^
+                        Team phase (parallel           Team phase      Always runs      Optional:
+                        specialist reviews)            (parallel       (unit+integ+     full-review
+                                                       impl+tests)     e2e+agentic)     fix loop
 ```
 
 **Prerequisites:**
@@ -44,11 +45,13 @@ Each execute call runs the next step. The stop hook auto-continues on success:
 |------|---------|---------|-------|---------|
 | 1 | `/speckit.specify` | Generate spec.md from idea.md | No | No |
 | 2 | `/speckit.clarify` | Resolve ambiguities (NEVER skip) | No | Yes — MUST wait for user |
-| 3 | `/speckit.plan` | Generate implementation plan | No | No |
+| 3 | `/speckit.plan` | Generate implementation plan with full testing strategy | No | No |
 | 4 | Team phase | Parallel specialist plan reviews | Yes | No |
 | 5 | `/speckit.tasks` | Generate tasks.md | No | No |
 | 6 | `/speckit.analyze` | Check consistency | No | No |
-| 7 | `/speckit.implement` | Execute tasks (parallel if teams) | Yes | No |
+| 7 | `/speckit.implement` | Execute tasks + test-writer in parallel | Yes | No |
+| 8 | test-and-fix | Run all test tiers, fix failures in loop | No | No |
+| 9 | review-loop | Full-review → fix CRITICAL/HIGH in loop | No | No (optional) |
 
 Steps marked "Team?" use agent teams when `teams_enabled` is true. When false, step 4 is skipped and step 7 runs sequentially.
 
@@ -113,13 +116,14 @@ All work must align with the approved plan.
 **Additional context for the `plan` step:**
 
 ```
-The plan MUST include a detailed testing section covering:
-- Unit tests for each module/component
-- Integration tests for API endpoints and service interactions
-- E2E tests for backend (full request lifecycles, data pipelines)
-- E2E tests for frontend (complete user journeys, critical paths)
-The testing section should specify test frameworks, file locations,
-and concrete test scenarios for each category.
+The plan MUST include a dedicated Testing Strategy section covering all four tiers:
+- Unit tests: per-module/component behavior coverage, edge cases, error conditions
+- Integration tests: API endpoints, service interactions, database operations
+- E2E tests — backend: full request lifecycles, data pipelines, auth flows
+- E2E tests — frontend: complete user journeys, critical paths (Playwright/Cypress)
+- Agentic E2E: Chrome DevTools MCP browser scenarios (if agentic_validation_enabled)
+For each tier, specify: test framework, file locations, and 2–3 concrete test scenarios.
+The test-writer agent will use this section to write tests in parallel with implementation.
 ```
 
 ### Post-Specify Verification
@@ -182,11 +186,139 @@ Fix the issue, then run:
 ══════════════════════════════════════════════════════════════
 ```
 
+### Test-and-Fix Step (Step 8 — Always Runs)
+
+After `implement` completes, run the `test-and-fix` step.
+
+**Set state:** `"test-and-fix": "in_progress"` before starting.
+
+**Procedure:**
+
+1. **Detect test runner:**
+   - Check `package.json` for `vitest`, `jest`, `playwright`, `cypress`
+   - Check for `pytest.ini`, `pyproject.toml`, `setup.cfg`
+   - Note the run commands
+
+2. **Run unit tests:**
+   ```bash
+   # Auto-detect and run — examples:
+   pnpm test:unit    # or: npx vitest run --reporter=verbose
+   pytest tests/unit/
+   ```
+   Collect: passed, failed, skipped counts; list of failing test names and errors.
+
+3. **Run integration tests:**
+   ```bash
+   pnpm test:integration    # or: npx vitest run --project=integration
+   pytest tests/integration/
+   ```
+   Collect results.
+
+4. **Run E2E tests:**
+   ```bash
+   pnpm test:e2e    # or: npx playwright test
+   pytest tests/e2e/
+   ```
+   Collect results. If no E2E framework is configured, note it as "not configured" and skip.
+
+5. **Run agentic E2E validation** (only if `agentic_validation_enabled: true` in state):
+   - Check if `lib/testing/scenarios/<feature>.yaml` exists
+   - If yes: run each scenario using Chrome DevTools MCP
+     - For each scenario: `navigate_to`, run `wait_for`, evaluate each `assert` type
+     - For `ai_judge` assertions: use a subagent to evaluate the browser state against the pass condition
+   - Write results to `specs/<feature>/reports/validation-report.md`
+   - If the scenarios file does not exist, warn and skip
+
+6. **Evaluate combined results:**
+   - Tally: total tests, passed, failed across all tiers
+   - **If all pass** → set `"test-and-fix": "completed"`, advance `current_step`, display:
+     ```
+     ✅ test-and-fix — all tests passed.
+     ```
+   - **If any failures:**
+     - Display failure summary:
+       ```
+       ❌ test-and-fix — N test(s) failing:
+         Unit:        [list failing tests and errors]
+         Integration: [list]
+         E2E:         [list]
+         Agentic:     [list failed assertions]
+       ```
+     - Make targeted fixes: read each failing test, identify the bug in the source code, fix it
+     - Re-run only the previously failing tests to confirm fixes
+     - Increment `test_fix_iterations` in state
+     - If `test_fix_iterations >= 3` and failures remain:
+       - Set `"test-and-fix": "needs_resolve"` (stop hook will block and auto-feed execute)
+       - Display:
+         ```
+         ══════════════════════════════════════════════════════════════
+         ⚠️  TEST-AND-FIX NEEDS MANUAL REVIEW
+         ══════════════════════════════════════════════════════════════
+         3 fix iterations exhausted with remaining failures.
+         Manual intervention required to resolve:
+           [list remaining failing tests]
+         Fix the issues and run /speckit-orchestrator:execute to continue.
+         ══════════════════════════════════════════════════════════════
+         ```
+     - Otherwise: loop back to running the full test suite
+
+After all tests pass, write the combined test report to `specs/<feature>/reports/test-report.md` (use the Test Report Format defined below).
+
+---
+
+### Review Loop (Step 9 — Optional)
+
+Runs after `test-and-fix` completes. Only executes if `review_loop_enabled: true` in state.
+
+**Set state:** `"review-loop": "in_progress"` before starting.
+
+**Procedure:**
+
+1. **Invoke full-review** scoped to the feature branch diff:
+   ```
+   /full-review
+   ```
+   (Pass the feature branch diff as scope — same as what the full-review SKILL.md's `--pr` mode does)
+
+2. **Read the master report** at `docs/review/full-review-{YYYY-MM-DD}.md` (most recent one created)
+
+3. **Count findings** by severity:
+   - Count CRITICAL findings
+   - Count HIGH findings
+   - Combine: `blocking_count = critical + high`
+
+4. **If `blocking_count == 0`:**
+   - Set `"review-loop": "completed"`, advance `current_step`
+   - Display: `✅ review-loop — no CRITICAL/HIGH findings.`
+
+5. **If `blocking_count > 0`:**
+   - Display all CRITICAL and HIGH findings with file paths and recommendations
+   - Make targeted fixes: for each finding, read the referenced file, apply the fix described in the recommendation
+   - Increment `review_loop_iterations` in state
+   - If `review_loop_iterations >= 3` and blocking findings remain:
+     - Set `"review-loop": "needs_resolve"` (stop hook blocks)
+     - Display:
+       ```
+       ══════════════════════════════════════════════════════════════
+       ⚠️  REVIEW LOOP NEEDS MANUAL REVIEW
+       ══════════════════════════════════════════════════════════════
+       3 review iterations exhausted with remaining CRITICAL/HIGH findings.
+       Manual review required for:
+         [list findings with locations]
+       Fix the issues and run /speckit-orchestrator:execute to continue.
+       ══════════════════════════════════════════════════════════════
+       ```
+   - Otherwise: go back to step 1 (re-invoke full-review)
+
+---
+
 ### After All Steps Complete
 
 The orchestrator auto-archives the state file (`orchestrator-state.json` → `orchestrator-state.completed.json`) so the stop hook no longer triggers for this feature.
 
-**Before displaying completion**, read the test report at `specs/<feature>/reports/test-report.md` and include its summary.
+**Before displaying completion:**
+- Read the test report at `specs/<feature>/reports/test-report.md`
+- If `review_loop_enabled`, read the latest full-review report at `docs/review/full-review-{date}.md`
 
 Display:
 ```
@@ -196,6 +328,7 @@ Display:
 
  [✓] Specify   →  [✓] Clarify      →  [✓] Plan     →  [✓] Plan Review ⚡
  [✓] Tasks     →  [✓] Analyze      →  [✓] Implement ⚡
+ [✓] Test & Fix →  [✓] Review Loop (if enabled)
 
 Feature <feature-name> is fully implemented.
 State archived → orchestrator-state.completed.json
@@ -206,8 +339,13 @@ State archived → orchestrator-state.completed.json
  Integration: XX passed / XX total
  E2E Backend: XX passed / XX total
  E2E Frontend:XX passed / XX total
+ Agentic E2E: XX passed / XX total (if enabled)
 
  Full report: specs/<feature>/reports/test-report.md
+
+── Review Summary (if review-loop ran) ──────────────────────
+ CRITICAL: 0 | HIGH: 0 | MEDIUM: N | LOW: N
+ Full report: docs/review/full-review-{date}.md
 ══════════════════════════════════════════════════════════════
 ```
 
@@ -444,14 +582,24 @@ docs/features/<feature>/orchestrator-state.json
     "plan-review": "pending",
     "tasks": "pending",
     "analyze": "pending",
-    "implement": "pending"
+    "implement": "pending",
+    "test-and-fix": "pending",
+    "review-loop": "pending"
   },
   "started_at": "ISO8601",
   "last_updated": "ISO8601",
   "teams_enabled": true,
+  "agentic_validation_enabled": false,
+  "review_loop_enabled": false,
+  "test_fix_iterations": 0,
+  "review_loop_iterations": 0,
   "team_state": null
 }
 ```
+
+**Note:** `review-loop` is included in `step_status` only when `review_loop_enabled` is true. If false, the step is omitted from `step_status` and the stop hook skips it.
+
+`pipeline_paused` flag omitted above for brevity — it still exists and is read by the stop hook.
 
 ### Updating State
 
@@ -479,6 +627,7 @@ During team phases, also update `team_state` with teammate progress.
 ╠════════════════════════════════════════════════════════════════════════════╣
 ║  [✓] Specify  →  [✓] Clarify  →  [✓] Plan  →  [▶] Plan Review ⚡          ║
 ║  [ ] Tasks    →  [ ] Analyze  →  [ ] Implement ⚡                          ║
+║  [ ] Test & Fix  →  [ ] Review Loop                                        ║
 ╠════════════════════════════════════════════════════════════════════════════╣
 ║  Team: speckit-dark-mode-toggle-plan-review                                ║
 ║    [✓] security-reviewer                                                   ║
@@ -491,9 +640,11 @@ During team phases, also update `team_state` with teammate progress.
 - `[✓]` Completed
 - `[−]` Skipped
 - `[▶]` In Progress
-- `[!]` Needs Resolve (has fixable findings)
+- `[!]` Needs Resolve (has fixable findings — loop will re-attempt)
 - `[ ]` Pending
 - `⚡` Team step (parallel agents)
+
+The `Review Loop` row only appears when `review_loop_enabled` is true.
 
 ## Critical Rules
 
