@@ -3,7 +3,7 @@ name: vectcut-api
 description: "VectCutAPI is a powerful cloud-based video editing API tool that provides programmatic control over CapCut/JianYing (剪映) for professional video editing. Use this skill when users need to: (1) Create video draft projects programmatically, (2) Add video/audio/image materials with precise control, (3) Add text, subtitles, and captions, (4) Apply effects, transitions, and animations, (5) Add keyframe animations, (6) Process videos in batch, (7) Generate AI-powered videos, (8) Integrate with n8n workflows, (9) Build MCP video editing agents. The API supports HTTP REST and MCP protocols, works with both CapCut (international) and JianYing (China), and provides web preview without downloading."
 metadata:
   author: lamtuanvu
-  version: "1.0.1"
+  version: "1.0.2"
 ---
 
 # VectCutAPI 视频剪辑 API
