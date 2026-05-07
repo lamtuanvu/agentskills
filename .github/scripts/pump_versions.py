@@ -142,10 +142,6 @@ def read_json(path: Path) -> dict:
     return json.loads(path.read_text())
 
 
-def write_json(path: Path, data: dict) -> None:
-    path.write_text(json.dumps(data, indent=2) + "\n")
-
-
 def local_plugin_names(marketplace: dict) -> set[str]:
     out = set()
     for p in marketplace.get("plugins", []):
@@ -153,6 +149,56 @@ def local_plugin_names(marketplace: dict) -> set[str]:
         if isinstance(src, str):
             out.add(p["name"])
     return out
+
+
+PLUGIN_JSON_VERSION_RE = re.compile(r'("version"\s*:\s*")[^"]*(")')
+
+
+def write_plugin_json_version(path: Path, new_version: str) -> bool:
+    """Surgical version update for plugin.json — preserves all formatting."""
+    text = path.read_text()
+    new_text, n = PLUGIN_JSON_VERSION_RE.subn(
+        rf'\g<1>{new_version}\g<2>', text, count=1
+    )
+    if n == 0:
+        return False
+    path.write_text(new_text)
+    return True
+
+
+# Indentation-anchored to top-level (2-space) and metadata-block (4-space) keys.
+MARKETPLACE_ROOT_VERSION_RE = re.compile(
+    r'(?m)^(  "version"\s*:\s*")[^"]*(")'
+)
+MARKETPLACE_METADATA_VERSION_RE = re.compile(
+    r'(?m)^(    "version"\s*:\s*")[^"]*(")'
+)
+
+
+def write_marketplace_versions(
+    path: Path,
+    new_root: str,
+    plugin_versions: dict[str, str],
+) -> None:
+    """Surgical version updates for marketplace.json — preserves array layout, em-dashes, etc."""
+    text = path.read_text()
+    text, n = MARKETPLACE_ROOT_VERSION_RE.subn(
+        rf'\g<1>{new_root}\g<2>', text, count=1
+    )
+    if n == 0:
+        raise RuntimeError("root version key not found in marketplace.json")
+    text, _ = MARKETPLACE_METADATA_VERSION_RE.subn(
+        rf'\g<1>{new_root}\g<2>', text, count=1
+    )
+    for name, ver in plugin_versions.items():
+        pattern = re.compile(
+            rf'("name"\s*:\s*"{re.escape(name)}".*?"version"\s*:\s*")[^"]*(")',
+            re.DOTALL,
+        )
+        text, n = pattern.subn(rf'\g<1>{ver}\g<2>', text, count=1)
+        if n == 0:
+            raise RuntimeError(f"plugin {name} version key not found")
+    path.write_text(text)
 
 
 def main() -> int:
@@ -209,12 +255,9 @@ def main() -> int:
                 continue
             new = bump(old, level)
             if not args.dry_run:
-                plugin_json["version"] = new
-                write_json(plugin_json_path, plugin_json)
-                for entry in marketplace["plugins"]:
-                    if entry.get("name") == name and isinstance(entry.get("source"), str):
-                        entry["version"] = new
-                        break
+                if not write_plugin_json_version(plugin_json_path, new):
+                    print(f"WARN: failed to write version to {plugin_json_path}", file=sys.stderr)
+                    continue
             bumps.append(("plugin", name, old, new, level))
             root_level = max(root_level, level)
 
@@ -226,11 +269,10 @@ def main() -> int:
     old_root = marketplace.get("version", "0.0.0")
     new_root = bump(old_root, root_level)
     if not args.dry_run:
-        marketplace["version"] = new_root
-        if "metadata" in marketplace and isinstance(marketplace["metadata"], dict):
-            if "version" in marketplace["metadata"]:
-                marketplace["metadata"]["version"] = new_root
-        write_json(MARKETPLACE_JSON, marketplace)
+        plugin_version_updates = {
+            name: new for kind, name, _, new, _ in bumps if kind == "plugin"
+        }
+        write_marketplace_versions(MARKETPLACE_JSON, new_root, plugin_version_updates)
 
     print("\nBump summary:")
     for kind, name, old, new, level in bumps:
