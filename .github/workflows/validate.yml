@@ -172,3 +172,38 @@ jobs:
 
           print('All local plugin sources validated')
           "
+
+  release:
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, '[skip ci]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Pump versions for changed units
+        id: pump
+        run: python .github/scripts/pump_versions.py
+
+      - name: Commit and tag
+        if: steps.pump.outputs.bumped == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore(release): pump versions [skip ci]"
+          for tag in ${{ steps.pump.outputs.tags }}; do
+            git tag "$tag"
+          done
+          git tag "v${{ steps.pump.outputs.root_version }}"
+          git push origin HEAD:main --follow-tags
