@@ -115,32 +115,26 @@ def read_skill_version(skill_md: Path) -> str | None:
     return None
 
 
+SKILL_VERSION_SUB_RE = re.compile(
+    r'(?m)^(?P<indent>[ \t]+)version:[ \t]*(?P<quote>["\']?)\d+\.\d+\.\d+(?P=quote)[ \t]*$'
+)
+
+
 def write_skill_version(skill_md: Path, new_version: str) -> bool:
+    """Rewrite metadata.version in SKILL.md frontmatter, preserving all surrounding bytes."""
     text = skill_md.read_text()
     parts = text.split("---", 2)
     if len(parts) < 3:
         return False
-    fm_lines = parts[1].splitlines()
-    in_metadata = False
-    changed = False
-    for i, line in enumerate(fm_lines):
-        if line.rstrip() == "metadata:":
-            in_metadata = True
-            continue
-        if in_metadata:
-            m = SKILL_VERSION_LINE_RE.match(line)
-            if m:
-                indent = m.group("indent")
-                quote = m.group("quote")
-                fm_lines[i] = f'{indent}version: {quote}{new_version}{quote}'
-                changed = True
-                break
-            if line and not line.startswith((" ", "\t")):
-                in_metadata = False
-    if not changed:
+    fm = parts[1]
+
+    def repl(m: re.Match) -> str:
+        return f'{m.group("indent")}version: {m.group("quote")}{new_version}{m.group("quote")}'
+
+    new_fm, count = SKILL_VERSION_SUB_RE.subn(repl, fm, count=1)
+    if count == 0:
         return False
-    new_text = "---" + "\n".join(fm_lines) + "---" + parts[2]
-    skill_md.write_text(new_text)
+    skill_md.write_text("---" + new_fm + "---" + parts[2])
     return True
 
 
