@@ -43,13 +43,13 @@ Each execute call runs the next step. The stop hook auto-continues on success:
 
 | Step | Command | Purpose | Team? | Pauses? |
 |------|---------|---------|-------|---------|
-| 1 | `/speckit.specify` | Generate spec.md from idea.md | No | No |
-| 2 | `/speckit.clarify` | Resolve ambiguities (NEVER skip) | No | Yes — MUST wait for user |
-| 3 | `/speckit.plan` | Generate implementation plan with full testing strategy | No | No |
+| 1 | `/speckit-specify` | Generate spec.md from idea.md | No | No |
+| 2 | `/speckit-clarify` | Resolve ambiguities (NEVER skip) | No | Yes — MUST wait for user |
+| 3 | `/speckit-plan` | Generate implementation plan with full testing strategy | No | No |
 | 4 | Team phase | Parallel specialist plan reviews | Yes | No |
-| 5 | `/speckit.tasks` | Generate tasks.md | No | No |
-| 6 | `/speckit.analyze` | Check consistency | No | No |
-| 7 | `/speckit.implement` | Execute tasks + test-writer in parallel | Yes | No |
+| 5 | `/speckit-tasks` | Generate tasks.md | No | No |
+| 6 | `/speckit-analyze` | Check consistency | No | No |
+| 7 | `/speckit-implement` | Execute tasks + test-writer in parallel | Yes | No |
 | 8 | test-and-fix | Run all test tiers, fix failures in loop | No | No |
 | 9 | review-loop | Full-review → fix CRITICAL/HIGH in loop | No | No (optional) |
 
@@ -61,9 +61,9 @@ The `clarify` step is a **mandatory human checkpoint**. The pipeline MUST stop a
 
 **Rules:**
 1. **NEVER auto-answer clarification questions** — present them to the user and STOP. The user decides every answer.
-2. **NEVER skip clarify or select a default** — even if `/speckit.clarify` finds zero ambiguities, you must still present that finding to the user and wait for their explicit confirmation before continuing.
+2. **NEVER skip clarify or select a default** — even if `/speckit-clarify` finds zero ambiguities, you must still present that finding to the user and wait for their explicit confirmation before continuing.
 3. **NEVER mark clarify as `"skipped"`** — always run it, always wait for the user, always mark as `"completed"` only after the user has reviewed.
-4. After running `/speckit.clarify`:
+4. After running `/speckit-clarify`:
    - **Questions found** → display all questions, then STOP. Do NOT answer them. Wait for the user to provide answers in a follow-up message. Only after the user responds, incorporate their answers and mark `clarify` as `"completed"`.
    - **No questions found** → display: _"No ambiguities found in the spec. Ready to proceed to the plan step?"_ then STOP. Wait for the user to confirm before marking `clarify` as `"completed"`.
 5. Only set `clarify: "completed"` and `current_step: "plan"` **after** the user has explicitly reviewed and responded. The stop hook gates on the `plan` step — it will not auto-continue past clarify.
@@ -97,7 +97,7 @@ All script invocations below use `$SCRIPTS_DIR`.
 3. **Orchestrator will:**
    - Read `orchestrator-state.json` to find next pending step
    - Read `idea.md` for context
-   - Run the appropriate `/speckit.*` command (or team phase)
+   - Run the appropriate `/speckit-*` command (or team phase)
    - **Update `step_status` to `"completed"` and advance `current_step`** (this is the signal the stop hook reads)
    - **If step failed → STOP and wait for user**
 
@@ -105,7 +105,7 @@ All script invocations below use `$SCRIPTS_DIR`.
 
 ### Context for Each Step
 
-When running each `/speckit.*` command, pass this context:
+When running each `/speckit-*` command, pass this context:
 
 ```
 Follow docs/features/<feature>/idea.md strictly.
@@ -128,7 +128,7 @@ The test-writer agent will use this section to write tests in parallel with impl
 
 ### Post-Specify Verification
 
-After `/speckit.specify` completes and before marking the step as completed, run:
+After `/speckit-specify` completes and before marking the step as completed, run:
 
 ```bash
 python "$SCRIPTS_DIR/verify_state.py" --fix
@@ -140,10 +140,10 @@ This verifies that `spec_dir` in orchestrator state matches the actual directory
 
 When `/speckit-orchestrator:execute` detects the `analyze` step with status `needs_resolve`:
 
-1. **Do NOT run `/speckit.analyze` fresh.** Instead:
+1. **Do NOT run `/speckit-analyze` fresh.** Instead:
    - Read the existing analysis output to identify HIGH/must-fix findings
    - Apply concrete edits to the artifacts (`plan.md`, `tasks.md`, `spec.md`, etc.) to resolve the findings
-   - Re-run `/speckit.analyze` to verify the fixes addressed all issues
+   - Re-run `/speckit-analyze` to verify the fixes addressed all issues
 
 2. **After re-analysis:**
    - If re-analysis finds **no HIGH/must-fix findings** → set `analyze: "completed"`, advance `current_step` to `implement`
@@ -151,7 +151,7 @@ When `/speckit-orchestrator:execute` detects the `analyze` step with status `nee
 
 ### Analyze Step Completion Logic
 
-When running `/speckit.analyze` for the **first time** (status was `pending` or `in_progress`):
+When running `/speckit-analyze` for the **first time** (status was `pending` or `in_progress`):
 
 - If analysis finds **no HIGH/must-fix findings** → set `analyze: "completed"`, advance normally
 - If analysis finds **HIGH findings that need artifact fixes** → set `analyze: "needs_resolve"` with `current_step: "analyze"` (do NOT advance to implement)
@@ -670,7 +670,7 @@ The `Review Loop` row only appears when `review_loop_enabled` is true.
 
 **All steps must follow idea.md strictly.**
 
-- Read idea.md before running any /speckit.* command
+- Read idea.md before running any /speckit-* command
 - Pass context about following idea.md
 - Flag scope drift as error
 

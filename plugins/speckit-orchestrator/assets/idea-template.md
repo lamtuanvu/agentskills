@@ -58,7 +58,7 @@ After exploration, write a clearer description:
 -
 
 ## Ready for Specification
-<!-- All items must be checked before proceeding to /speckit.specify -->
+<!-- All items must be checked before proceeding to /speckit-specify -->
 - [ ] Idea is clear and well-defined
 - [ ] Scope boundaries are established
 - [ ] Key questions are answered
