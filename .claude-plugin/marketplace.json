@@ -1,19 +1,19 @@
 {
   "name": "lamtuanvu-marketplace",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Agent skills marketplace — portable skills for AI coding agents, plus Claude Code plugins",
   "owner": {
     "name": "lamtuanvu",
     "github": "lamtuanvu"
   },
   "metadata": {
-    "version": "1.2.0",
+    "version": "1.2.1",
     "pluginRoot": "./plugins"
   },
   "plugins": [
     {
       "name": "speckit-orchestrator",
-      "version": "2.2.0",
+      "version": "2.2.1",
       "description": "SpecKit pipeline orchestrator — brainstorm, execute specify→clarify→plan→tasks→analyze→implement, auto-continue via stop hook",
       "source": "./plugins/speckit-orchestrator",
       "keywords": ["speckit", "workflow", "automation", "pipeline", "development", "brainstorm"]
