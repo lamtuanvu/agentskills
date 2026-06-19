@@ -82,6 +82,26 @@ SCRIPTS_DIR="${CLAUDE_PLUGIN_ROOT}/../../skills/speckit-orchestrator/scripts"
 
 All script invocations below use `$SCRIPTS_DIR`.
 
+### Register Worktree Branch (Required for Worktree Autonomy)
+
+**Run this once at the start of every execute, immediately after resolving `$SCRIPTS_DIR`:**
+
+```bash
+python "$SCRIPTS_DIR/orchestrator.py" register-worktree 2>/dev/null || true
+```
+
+The stop hook resolves which pipeline you are in by matching your **git branch**
+against `branch_name` (or `worktree_branches[]`) in each `orchestrator-state.json`.
+Inside a git worktree, your actual branch is an auto-generated name like
+`claude/priceless-jennings-e1810c`, which never matches the canonical feature
+branch (`042-dark-mode-toggle`). Without this step the stop hook hits
+"no state file found" on every Stop and the pipeline does **not** auto-continue.
+
+`register-worktree` records your current branch into the active feature's
+`worktree_branches[]` so the stop hook can find the pipeline. It is idempotent.
+If you know the exact feature, pass it explicitly:
+`python "$SCRIPTS_DIR/orchestrator.py" register-worktree <feature>`.
+
 ### Running the Pipeline
 
 1. **Switch to feature branch:**

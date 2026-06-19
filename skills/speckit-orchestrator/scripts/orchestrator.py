@@ -18,6 +18,7 @@ Usage:
     python orchestrator.py status [feature]          Show progress
     python orchestrator.py rollback <step>           Reset to step
     python orchestrator.py complete [--force]        Archive state after completion
+    python orchestrator.py register-worktree [feat]  Record worktree branch for stop-hook resolution
     python orchestrator.py team-status               Show team status
 """
 
@@ -28,7 +29,7 @@ import re
 import subprocess
 import sys
 from datetime import datetime, timezone
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, fields
 from enum import Enum
 from typing import Optional, Tuple
 
@@ -75,6 +76,7 @@ class OrchestratorState:
     teams_enabled: bool = True
     team_state: Optional[dict] = None
     pipeline_paused: bool = False
+    worktree_branches: Optional[list] = None
 
     @classmethod
     def new(cls, feature_name: str, branch_name: str, base_dir: str,
@@ -125,7 +127,12 @@ class OrchestratorState:
                 else StepStatus.SKIPPED.value
             )
 
-        state = cls(**data)
+        # Tolerate state files carrying fields outside this script's schema
+        # (e.g. test_fix_iterations, review_loop_enabled, agentic_validation_enabled,
+        # worktree_branches). The pipeline state is primarily LLM-edited JSON, so
+        # the on-disk shape is a superset of this dataclass — filter to known keys.
+        known = {f.name for f in fields(cls)}
+        state = cls(**{k: v for k, v in data.items() if k in known})
 
         # Warn if spec_dir doesn't exist but specs/<branch_name>/ does
         spec_dir = state.spec_dir
@@ -241,12 +248,70 @@ def find_state_file(base_dir: str) -> Tuple[Optional[str], Optional[str]]:
                 try:
                     with open(candidate, 'r') as f:
                         data = json.load(f)
-                    if data.get('branch_name') == branch:
+                    worktree_branches = data.get('worktree_branches') or []
+                    if data.get('branch_name') == branch or branch in worktree_branches:
                         return candidate, data.get('feature_name', entry)
                 except (json.JSONDecodeError, OSError):
                     continue
 
     return None, feature
+
+
+def _record_worktree_branch(state_file: str, branch: str) -> bool:
+    """Append the current git branch to a state file's worktree_branches[].
+
+    Returns True if the file was changed. No-ops when the branch is a base
+    branch, already equals the canonical branch_name, or is already recorded.
+    Uses raw JSON (not the dataclass) so it tolerates state files carrying
+    fields this script's schema doesn't know about.
+    """
+    if not branch or branch in ('main', 'master', 'develop', 'HEAD'):
+        return False
+    try:
+        with open(state_file, 'r') as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return False
+    if data.get('branch_name') == branch:
+        return False
+    worktree_branches = data.get('worktree_branches') or []
+    if branch in worktree_branches:
+        return False
+    worktree_branches.append(branch)
+    data['worktree_branches'] = worktree_branches
+    data['last_updated'] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    with open(state_file, 'w') as f:
+        json.dump(data, f, indent=2)
+    return True
+
+
+def _find_active_state_file(base_dir: str) -> Optional[str]:
+    """Return the single non-paused, not-fully-complete state file, else None.
+
+    Used as a bootstrap heuristic when resolving which pipeline a git worktree
+    belongs to. Safe by design: if zero or more than one feature is active it
+    returns None rather than guessing.
+    """
+    features_dir = os.path.join(base_dir, "docs", "features")
+    if not os.path.isdir(features_dir):
+        return None
+    active = []
+    for entry in os.listdir(features_dir):
+        candidate = os.path.join(features_dir, entry, "orchestrator-state.json")
+        if not os.path.exists(candidate):
+            continue
+        try:
+            with open(candidate, 'r') as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            continue
+        if data.get('pipeline_paused'):
+            continue
+        statuses = list((data.get('step_status') or {}).values())
+        if statuses and all(s in ('completed', 'skipped') for s in statuses):
+            continue
+        active.append(candidate)
+    return active[0] if len(active) == 1 else None
 
 
 def _step_label(step: Step, state: OrchestratorState) -> str:
@@ -568,6 +633,42 @@ def cmd_complete(args):
     print_progress(state)
 
 
+def cmd_register_worktree(args):
+    """Record the current git branch into a feature's worktree_branches[].
+
+    Lets the stop hook resolve the pipeline when running inside a git worktree
+    whose branch (e.g. "claude/xyz") does not match the canonical branch_name.
+    Idempotent and safe to call at the start of every execute.
+
+    Target resolution order:
+      1. --feature <name> if given (the caller knows the active feature)
+      2. a state file already resolvable from the current branch (no-op rewrite)
+      3. the single active (non-paused, unfinished) feature in this worktree
+    If none resolve, it exits quietly without changing anything.
+    """
+    base_dir = os.getcwd()
+    branch = get_current_branch()
+    if not branch:
+        return
+
+    state_file = None
+    feature = getattr(args, 'feature', None)
+    if feature:
+        candidate = os.path.join(base_dir, "docs", "features", feature, "orchestrator-state.json")
+        if os.path.exists(candidate):
+            state_file = candidate
+
+    if not state_file:
+        existing, _ = find_state_file(base_dir)
+        state_file = existing or _find_active_state_file(base_dir)
+
+    if not state_file:
+        return
+
+    if _record_worktree_branch(state_file, branch):
+        print(f"✓ Recorded worktree branch '{branch}' → {state_file}")
+
+
 def cmd_team_status(args):
     """Show detailed team status."""
     base_dir = os.getcwd()
@@ -662,6 +763,14 @@ def main():
     complete_p.add_argument("--force", action="store_true",
                             help="Archive even if pipeline is not fully complete")
     complete_p.set_defaults(func=cmd_complete)
+
+    # Register worktree branch (for stop-hook resolution inside git worktrees)
+    rw_p = subparsers.add_parser(
+        "register-worktree",
+        help="Record the current git branch into a feature's worktree_branches[]",
+    )
+    rw_p.add_argument("feature", nargs='?', help="Feature name (auto-detected if omitted)")
+    rw_p.set_defaults(func=cmd_register_worktree)
 
     # Team status
     team_p = subparsers.add_parser("team-status", help="Show team status")

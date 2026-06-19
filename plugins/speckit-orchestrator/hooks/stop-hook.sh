@@ -117,12 +117,18 @@ if [[ -f "$CANDIDATE_FILE" ]]; then
   FEATURE="$CANDIDATE"
 fi
 
-# Fallback: scan all state files for matching branch_name
+# Fallback: scan all state files for a match on either the canonical
+# branch_name OR an entry in worktree_branches[]. The latter handles git
+# worktrees, whose actual branch (e.g. "claude/xyz") never matches the
+# canonical feature branch recorded in branch_name — execute records the
+# worktree branch into worktree_branches[] so the pipeline resolves here.
 if [[ -z "$STATE_FILE" ]]; then
   for f in "${REPO_ROOT}"/docs/features/*/orchestrator-state.json; do
     [[ -f "$f" ]] || continue
-    FILE_BRANCH=$(jq -r '.branch_name // ""' "$f" 2>/dev/null || echo "")
-    if [[ "$FILE_BRANCH" == "$BRANCH" ]]; then
+    MATCH=$(jq -r --arg b "$BRANCH" '
+      if (.branch_name == $b) or ((.worktree_branches // []) | index($b)) then "yes" else "no" end
+    ' "$f" 2>/dev/null || echo "no")
+    if [[ "$MATCH" == "yes" ]]; then
       STATE_FILE="$f"
       FEATURE=$(jq -r '.feature_name // ""' "$f" 2>/dev/null || echo "")
       break
