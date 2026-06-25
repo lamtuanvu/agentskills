@@ -219,6 +219,28 @@ After `implement` completes, run the `test-and-fix` step.
    - Check for `pytest.ini`, `pyproject.toml`, `setup.cfg`
    - Note the run commands
 
+1a. **Map idea.md Success Criteria → test tiers** (REQUIRED — blocks if unmapped):
+   - Read `docs/features/<feature>/idea.md`.
+   - For each entry under `## Success Criteria` AND each P0 entry under
+     `### Must Have (P0)`:
+     - Identify which tier validates it. Conventions:
+       - "Clicking X jumps the viewer to Y", "highlight overlay mounts on Z",
+         "active row state updates", behaviour assertions on the rendered UI
+         → Playwright E2E (`tests/e2e/**/*.spec.ts` or similar)
+       - "Backfill batch completes", "search returns position.page == N",
+         "embedding FKs preserved", API-shape assertions over real DB
+         → integration tests + E2E backend
+       - "Harness DOM-pass-rate ≥ X%", "Judge-pass-rate ≥ Y%",
+         "agent cites correct span" → agentic harness
+       - "Column added", "field present", "API serializer fills X",
+         "module compiles" → unit/typecheck
+     - Record the mapping in state under `p0_tier_map: {criterion: tier}`.
+   - If any P0 criterion cannot be confidently mapped → STOP, ask the user
+     which tier should cover it. Do NOT silently classify as "no test needed".
+   - If `idea.md` has no `## Success Criteria` section → ask the user to
+     enumerate them once before proceeding. Save them under
+     `p0_tier_map` and continue.
+
 2. **Run unit tests:**
    ```bash
    # Auto-detect and run — examples:
@@ -249,14 +271,58 @@ After `implement` completes, run the `test-and-fix` step.
    - Write results to `specs/<feature>/reports/validation-report.md`
    - If the scenarios file does not exist, warn and skip
 
-6. **Evaluate combined results:**
-   - Tally: total tests, passed, failed across all tiers
-   - **If all pass** → set `"test-and-fix": "completed"`, advance `current_step`, display:
-     ```
-     ✅ test-and-fix — all tests passed.
-     ```
-   - **If any failures:**
-     - Display failure summary:
+6. **Evaluate combined results across THREE possible verdicts** (PASS,
+   CONDITIONAL_PASS, FAIL — based on `p0_tier_map` from step 1a):
+
+   **PASS** — every tier in `p0_tier_map` actually ran AND produced zero
+   feature-attributable failures.
+     → Set `"test-and-fix": "completed"`, `verdict: "PASS"`,
+       advance `current_step`, display:
+       ```
+       ✅ test-and-fix — all P0 criteria verified, all tests passed.
+       ```
+
+   **CONDITIONAL_PASS** — every tier that DID run is clean, but one or more
+   tiers in `p0_tier_map` are in `tiers_deferred` (chromium absent, API key
+   unset, container OOM, dep-conflict, env-blocker, etc).
+     → Set `"test-and-fix": "completed_conditional"`,
+       `verdict: "CONDITIONAL_PASS"`,
+       `current_step: "test-and-fix-human-gate"`.
+     → Compute unverified-P0 list: for each P0 criterion, mark unverified
+       if its mapped tier is in `tiers_deferred`.
+     → Display:
+       ```
+       ══════════════════════════════════════════════════════════════
+       ⚠️  CONDITIONAL_PASS — P0 verification gap
+       ══════════════════════════════════════════════════════════════
+       The following P0 success criteria from idea.md are UNVERIFIED:
+         - <criterion 1>  (would be covered by <deferred tier>)
+         - <criterion 2>  (would be covered by <deferred tier>)
+
+       Reason deferred: <reason from tiers_deferred>
+
+       Options:
+         (a) Resolve the blocker and re-run test-and-fix
+             (e.g. `npx playwright install chromium`, set ANTHROPIC_API_KEY,
+              raise container memory, etc.)
+         (b) Acknowledge the gap as accepted-uncovered risk and proceed.
+             Pipeline status becomes complete-pending-verification.
+         (c) Open follow-up ticket(s) for the deferred verification and proceed.
+
+       Reply (a), (b), or (c) to continue.
+       ══════════════════════════════════════════════════════════════
+       ```
+     → Then STOP. Do NOT advance `current_step`. The stop hook MUST treat
+       this as a human-in-the-loop pause (same semantics as `clarify`).
+     → On user reply:
+       (a) → reset `"test-and-fix": "in_progress"`, loop to step 1.
+       (b) → set `current_step: "complete-pending-verification"`,
+             archive state with the unverified-P0 list preserved.
+       (c) → expect the user to confirm tickets created;
+             then same as (b).
+
+   **FAIL** — any tier that ran produced feature-attributable failures.
+     → Display failure summary:
        ```
        ❌ test-and-fix — N test(s) failing:
          Unit:        [list failing tests and errors]
@@ -264,11 +330,12 @@ After `implement` completes, run the `test-and-fix` step.
          E2E:         [list]
          Agentic:     [list failed assertions]
        ```
-     - Make targeted fixes: read each failing test, identify the bug in the source code, fix it
-     - Re-run only the previously failing tests to confirm fixes
-     - Increment `test_fix_iterations` in state
-     - If `test_fix_iterations >= 3` and failures remain:
-       - Set `"test-and-fix": "needs_resolve"` (stop hook will block and auto-feed execute)
+     → Make targeted fixes: read each failing test, identify the bug in the
+       source code, fix it.
+     → Re-run only the previously failing tests to confirm fixes.
+     → Increment `test_fix_iterations` in state.
+     → If `test_fix_iterations >= 3` and failures remain:
+       - Set `"test-and-fix": "needs_resolve"` (stop hook blocks).
        - Display:
          ```
          ══════════════════════════════════════════════════════════════
@@ -280,7 +347,11 @@ After `implement` completes, run the `test-and-fix` step.
          Fix the issues and run /speckit-orchestrator:execute to continue.
          ══════════════════════════════════════════════════════════════
          ```
-     - Otherwise: loop back to running the full test suite
+     → Otherwise: loop back to running the full test suite.
+
+   **Critical:** a deferred tier whose P0 criterion is `nice-to-have` (P1)
+   does NOT trigger CONDITIONAL_PASS — only deferred tiers that map to
+   actual P0 / Success-Criteria items do.
 
 After all tests pass, write the combined test report to `specs/<feature>/reports/test-report.md` (use the Test Report Format defined below).
 

@@ -155,6 +155,19 @@ fi
 # -------------------------------------------------------------------
 # 5. Check pipeline_paused flag → if true, allow stop
 # -------------------------------------------------------------------
+# Also pause on the human-in-the-loop CONDITIONAL_PASS gate from
+# test-and-fix step. See commands/execute.md §"Test-and-Fix Step" step 6:
+# when one or more tiers in p0_tier_map are deferred, the orchestrator
+# sets current_step to "test-and-fix-human-gate" and expects user input
+# (a) resolve / (b) accept gap / (c) ticket-and-proceed. Auto-continue
+# here would skip the gate and let an unverified P0 pipeline reach
+# "complete" — the exact leak this gate exists to prevent.
+CURRENT_STEP=$(echo "$STATE" | jq -r '.current_step // ""')
+if [[ "$CURRENT_STEP" == "test-and-fix-human-gate" ]]; then
+  _dbg "EXIT: test-and-fix CONDITIONAL_PASS — awaiting user (a)/(b)/(c)"
+  exit 0
+fi
+
 PAUSED=$(echo "$STATE" | jq -r '.pipeline_paused // false')
 if [[ "$PAUSED" == "true" ]]; then
   _dbg "EXIT: pipeline paused"
