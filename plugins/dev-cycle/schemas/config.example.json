@@ -1,0 +1,22 @@
+{
+  "provider": "github",
+  "tracker": {
+    "owner": "your-org",
+    "repo": "your-repo",
+    "project": 1,
+    "assignee": "@me",
+    "statuses": ["Backlog", "Ready", "In progress", "In review", "Done"],
+    "done_autocloses": true
+  },
+  "scm": {
+    "branch_prefix": "NNN-kebab",
+    "commit_convention": "conventional",
+    "pr_closes_parent": true
+  },
+  "validation": {
+    "provider": "your-validation-provider",
+    "driver": "chrome",
+    "scenarios_dir": "e2e/scenarios"
+  },
+  "loops_default": ["speckit-implement", "review-code"]
+}
