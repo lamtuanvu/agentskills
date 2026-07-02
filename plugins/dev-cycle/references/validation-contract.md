@@ -21,6 +21,23 @@ A provider exposes an entrypoint (`bin/<provider>` or documented commands) respo
 | `reset` | Restore a clean state between runs (DB clean + service reset). | `{ ok: bool }` |
 | `teardown` | Stop the stack. | `{ ok: bool }` |
 
+## Optional verbs (observability + resilience)
+
+Providers may additionally implement these; the generic manifest-driven runner
+(`dev-cycle/bin/harness`) does, from `.dev-cycle/harness.json`:
+
+| Verb | Purpose | Returns |
+|---|---|---|
+| `observe` | Capture logs/console/network/metrics into an evidence dir. | `{ evidence_dir, captured[] }` |
+| `inject_fault --name <n> [--restore]` | Apply/undo a declared fault (kill service, drop network, skew time) to validate resilience. **Gated:** requires `--confirm`. | `{ ok }` or `{ skipped }` |
+
+## The generic runner
+
+`dev-cycle/bin/harness <verb>` is a universal, config-driven provider: set
+`validation.provider: "generic"` and `validation.manifest: ".dev-cycle/harness.json"`.
+It executes manifest-declared commands / `custom-script` hooks — no per-project provider
+code. The `agentic-harness` skill auto-builds the manifest and self-verifies it.
+
 ## Tier ladder (union-owned)
 
 1. **unit** — the project's unit runner (`cargo test` / `vitest` / …).
