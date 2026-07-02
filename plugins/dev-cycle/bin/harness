@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# harness — generic, manifest-driven validation harness runner (dev-cycle).
+# Implements the extended validation contract by executing commands declared in
+# .dev-cycle/harness.json. One JSON object per verb on stdout; logs to stderr.
+set -euo pipefail
+SELF="${BASH_SOURCE[0]}"; while [ -h "$SELF" ]; do SELF="$(readlink "$SELF")"; done
+BIN_DIR="$(cd "$(dirname "$SELF")" && pwd)"
+ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$BIN_DIR")}"
+LIB="$ROOT/lib"
+. "$LIB/harness-common.sh"
+
+VERB="${1:-}"; shift || true
+MANIFEST=""; CONFIRM=0; ARGS=()
+while [ $# -gt 0 ]; do case "$1" in
+  --manifest) MANIFEST="$2"; shift 2;;
+  --confirm) CONFIRM=1; shift;;
+  *) ARGS+=("$1"); shift;;
+esac; done
+[ -n "$MANIFEST" ] || MANIFEST="$(pwd)/.dev-cycle/harness.json"
+
+usage() { cat >&2 <<EOF
+usage: harness <verb> [--manifest F] [--confirm] [verb-args]
+  verbs: bring_up health teardown restart seed auth_session reset
+         drive_scenario assert observe inject_fault
+EOF
+}
+[ -n "$VERB" ] || { usage; exit 0; }
+command -v jq >/dev/null || hdie "jq required"
+[ -f "$MANIFEST" ] || hdie "manifest not found: $MANIFEST"
+EVIDENCE_DIR="$(mf '.evidence_dir')"; [ -n "$EVIDENCE_DIR" ] || EVIDENCE_DIR=".dev-cycle/evidence"
+
+case "$VERB" in
+  bring_up|health|teardown|restart)   . "$LIB/harness-lifecycle.sh"; verb_"$VERB" "${ARGS[@]:-}";;
+  seed|auth_session|reset)            . "$LIB/harness-data.sh"; verb_"$VERB" "${ARGS[@]:-}";;
+  drive_scenario|assert)              . "$LIB/harness-drive.sh"; verb_"$VERB" "${ARGS[@]:-}";;
+  observe|inject_fault)               . "$LIB/harness-observe.sh"; verb_"$VERB" "${ARGS[@]:-}";;
+  *) hdie "unknown verb '$VERB'";;
+esac
