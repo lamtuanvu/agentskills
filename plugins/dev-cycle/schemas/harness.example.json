@@ -1,0 +1,14 @@
+{
+  "services": [
+    { "name": "web", "up": "your start command", "down": "your stop command", "health": "http://127.0.0.1:8080/health" }
+  ],
+  "frontend_url": "http://127.0.0.1:5173",
+  "auth": { "strategy": "form-login", "login_url": "/login" },
+  "seed": { "cmd": "your seed command" },
+  "reset": { "targets": ["./.data"], "destructive": true },
+  "observe": { "logs": ["logs/*.log"], "console": true, "network": true, "metrics": [] },
+  "faults": [{ "name": "kill-web", "inject": "your kill cmd", "restore": "your restart cmd" }],
+  "scenarios_dir": "e2e/scenarios",
+  "driver": "chrome",
+  "evidence_dir": ".dev-cycle/evidence"
+}
