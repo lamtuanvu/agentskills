@@ -13,4 +13,9 @@ check "usage on no args" "bash '$H' 2>&1 | grep -q usage"
 check "unknown verb errors" "bash '$H' bogus --manifest '$MAN' 2>&1 | grep -qi 'unknown'"
 check "missing manifest errors" "bash '$H' health --manifest /tmp/nope.json 2>&1 | grep -qi 'manifest'"
 
+# Task 3 assertions
+check "bring_up reports ready" "bash '$H' bring_up --manifest '$MAN' | jq -e '.ready==true' >/dev/null"
+check "health reports ready" "bash '$H' health --manifest '$MAN' | jq -e '.ready==true' >/dev/null"
+check "teardown ok" "bash '$H' teardown --manifest '$MAN' | jq -e '.ok==true' >/dev/null"
+
 echo "PASS=$pass FAIL=$fail"; [ "$fail" = 0 ]
