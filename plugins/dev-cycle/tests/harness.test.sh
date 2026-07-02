@@ -37,4 +37,8 @@ check "auth custom-script single json + session" "test \$(bash '$H' auth_session
 rm -rf .dev-cycle/hooks/testauth
 rmdir .dev-cycle/hooks 2>/dev/null || true
 
+# Task 5 assertions
+check "drive agentic emits delegate" "bash '$H' drive_scenario --tier agentic --manifest '$MAN' | jq -e '.delegate==\"e2e-agentic\"' >/dev/null"
+check "drive api no-op when absent" "bash '$H' drive_scenario --tier api --manifest '$MAN' | jq -e 'has(\"tier\")' >/dev/null"
+
 echo "PASS=$pass FAIL=$fail"; [ "$fail" = 0 ]

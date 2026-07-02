@@ -45,6 +45,7 @@
     },
     "scenarios_dir": { "type": "string" },
     "driver": { "enum": ["chrome", "preview", "playwright"] },
-    "evidence_dir": { "type": "string", "default": ".dev-cycle/evidence" }
+    "evidence_dir": { "type": "string", "default": ".dev-cycle/evidence" },
+    "tests": { "type": "object", "properties": { "api": { "type": "string" }, "ui": { "type": "string" } } }
   }
 }
