@@ -46,4 +46,17 @@ check "observe writes evidence dir" "bash '$H' observe --manifest '$MAN' | jq -e
 check "inject_fault refused w/o confirm" "bash '$H' inject_fault --name noop --manifest '$MAN' | jq -e '.skipped!=null' >/dev/null"
 check "inject_fault runs w/ confirm" "bash '$H' inject_fault --name noop --manifest '$MAN' --confirm | jq -e '.ok==true' >/dev/null"
 
+# Failure-path assertions (whole-feature review wave)
+ASSERTFAILMAN=/tmp/harness-assert-fail.json
+jq '.tests.ui="sh:exit 1"' "$FIX/sample-manifest.json" | sed "s#FIXTURE_DIR#$FIX#g" > "$ASSERTFAILMAN"
+check "assert reports failure" "bash '$H' assert --manifest '$ASSERTFAILMAN' | jq -e '.ok==false' >/dev/null"
+
+DRIVEAPIFAILMAN=/tmp/harness-drive-api-fail.json
+jq '.tests.api="sh:exit 1"' "$FIX/sample-manifest.json" | sed "s#FIXTURE_DIR#$FIX#g" > "$DRIVEAPIFAILMAN"
+check "drive api reports failure single-json" "test \$(bash '$H' drive_scenario --tier api --manifest '$DRIVEAPIFAILMAN' | wc -l) -eq 1 && bash '$H' drive_scenario --tier api --manifest '$DRIVEAPIFAILMAN' | jq -e '.pass==false' >/dev/null"
+
+RESETNODESTRUCTMAN=/tmp/harness-reset-no-destructive.json
+jq 'del(.reset.destructive)' "$FIX/sample-manifest.json" | sed "s#FIXTURE_DIR#$FIX#g" > "$RESETNODESTRUCTMAN"
+check "reset gated when destructive omitted" "bash '$H' reset --manifest '$RESETNODESTRUCTMAN' | jq -e '.skipped!=null' >/dev/null"
+
 echo "PASS=$pass FAIL=$fail"; [ "$fail" = 0 ]

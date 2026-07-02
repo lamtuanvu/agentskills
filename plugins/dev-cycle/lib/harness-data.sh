@@ -7,7 +7,10 @@ verb_seed() {
     out="$(run_cmd "sh:bash .dev-cycle/hooks/$hook" 2>&1)" || { hlog "seed hook '$hook' failed: $out"; jout '{"seeded":false}'; return; }
   elif [ -n "$cmd" ]; then
     out="$(run_cmd "$cmd" 2>&1)" || { hlog "seed cmd '$cmd' failed: $out"; jout '{"seeded":false}'; return; }
-  else hlog "seed: nothing declared (no-op)"; fi
+  else
+    hlog "seed: nothing declared (no-op)"
+    jout '{"seeded":true,"note":"no-op"}'; return
+  fi
   jout '{"seeded":true}'
 }
 
@@ -30,7 +33,7 @@ verb_auth_session() {
 
 verb_reset() {
   local destructive; destructive="$(mf '.reset.destructive')"
-  if [ "$destructive" = "true" ] && [ "${CONFIRM:-0}" != 1 ]; then
+  if [ "$destructive" != "false" ] && [ "${CONFIRM:-0}" != 1 ]; then
     jout '{"ok":false,"skipped":"needs --confirm (destructive reset)"}'; return
   fi
   local ok=true cmd; cmd="$(mf '.reset.cmd')"

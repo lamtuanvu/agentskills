@@ -30,9 +30,9 @@ command -v jq >/dev/null || hdie "jq required"
 EVIDENCE_DIR="$(mf '.evidence_dir')"; [ -n "$EVIDENCE_DIR" ] || EVIDENCE_DIR=".dev-cycle/evidence"
 
 case "$VERB" in
-  bring_up|health|teardown|restart)   . "$LIB/harness-lifecycle.sh"; verb_"$VERB" "${ARGS[@]:-}";;
-  seed|auth_session|reset)            . "$LIB/harness-data.sh"; verb_"$VERB" "${ARGS[@]:-}";;
-  drive_scenario|assert)              . "$LIB/harness-drive.sh"; verb_"$VERB" "${ARGS[@]:-}";;
-  observe|inject_fault)               . "$LIB/harness-observe.sh"; verb_"$VERB" "${ARGS[@]:-}";;
+  bring_up|health|teardown|restart)   . "$LIB/harness-lifecycle.sh"; verb_"$VERB" ${ARGS[@]+"${ARGS[@]}"};;
+  seed|auth_session|reset)            . "$LIB/harness-data.sh"; verb_"$VERB" ${ARGS[@]+"${ARGS[@]}"};;
+  drive_scenario|assert)              . "$LIB/harness-drive.sh"; verb_"$VERB" ${ARGS[@]+"${ARGS[@]}"};;
+  observe|inject_fault)               . "$LIB/harness-observe.sh"; verb_"$VERB" ${ARGS[@]+"${ARGS[@]}"};;
   *) hdie "unknown verb '$VERB'";;
 esac

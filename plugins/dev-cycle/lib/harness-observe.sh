@@ -5,15 +5,19 @@ _has_flag() { local want="$1"; shift; for a in "$@"; do [ "$a" = "$want" ] && re
 verb_observe() {
   mkdir -p "$EVIDENCE_DIR"
   local captured="[]" count; count="$(jq '.observe.logs | length // 0' "$MANIFEST" 2>/dev/null || echo 0)"
-  for i in $(seq 0 $((count-1))); do
-    local glob; glob="$(mf ".observe.logs[$i]")"
-    for f in $glob; do [ -f "$f" ] && cp "$f" "$EVIDENCE_DIR/" 2>/dev/null && captured="$(jq -c --arg f "$f" '. + [$f]' <<<"$captured")"; done
-  done
+  if [ "$count" -gt 0 ]; then
+    for i in $(seq 0 $((count-1))); do
+      local glob; glob="$(mf ".observe.logs[$i]")"
+      for f in $glob; do [ -f "$f" ] && cp "$f" "$EVIDENCE_DIR/" 2>/dev/null && captured="$(jq -c --arg f "$f" '. + [$f]' <<<"$captured")"; done
+    done
+  fi
   local mcount; mcount="$(jq '.observe.metrics | length // 0' "$MANIFEST" 2>/dev/null || echo 0)"
-  for i in $(seq 0 $((mcount-1))); do
-    local url; url="$(mf ".observe.metrics[$i]")"
-    [ -n "$url" ] && curl -s "$url" -o "$EVIDENCE_DIR/metrics-$i.txt" 2>/dev/null && captured="$(jq -c --arg u "$url" '. + [$u]' <<<"$captured")"
-  done
+  if [ "$mcount" -gt 0 ]; then
+    for i in $(seq 0 $((mcount-1))); do
+      local url; url="$(mf ".observe.metrics[$i]")"
+      [ -n "$url" ] && curl -s "$url" -o "$EVIDENCE_DIR/metrics-$i.txt" 2>/dev/null && captured="$(jq -c --arg u "$url" '. + [$u]' <<<"$captured")"
+    done
+  fi
   jout "$(jq -nc --arg d "$EVIDENCE_DIR" --argjson c "$captured" '{evidence_dir:$d, captured:$c}')"
 }
 
