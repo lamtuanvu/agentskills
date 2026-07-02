@@ -1,0 +1,10 @@
+{
+  "name": "dev-cycle",
+  "version": "0.1.0",
+  "description": "The union: run a feature end-to-end through SpecKit (spine) + loop-templates (adversarial engines) + a swappable git-ops tracker + a browser-driven E2E validation harness. General and distributable — knows nothing about a specific project's GitHub/branches/stack; hooks those in via provider contracts and .dev-cycle/config.json. Hosts the E2E harness engine (agentic browser driver + ai-judge + scenario schema + validation contract). Co-install speckit-orchestrator + loop-templates.",
+  "author": {
+    "name": "lamtuanvu",
+    "github": "lamtuanvu"
+  },
+  "keywords": ["dev-cycle", "speckit", "workflow", "e2e", "validation", "orchestration", "pipeline"]
+}

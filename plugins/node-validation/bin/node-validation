@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+# node-validation — reference dev-cycle validation provider for the econ-v1 node repo.
+#
+# Implements the validation contract (see dev-cycle references/validation-contract.md) by
+# wrapping node's existing tests/e2e primitives. The dev-cycle union calls these verbs;
+# each prints a JSON result on stdout (logs go to stderr).
+#
+#   node-validation bring_up      [--mode regtest|4nodes] [--ui]
+#   node-validation seed          [--channel-sats N]
+#   node-validation auth_session  [--username U] [--base-url URL]
+#   node-validation drive_scenario --tier api|ui|agentic [--scenario F]
+#   node-validation assert        [--a11y]
+#   node-validation reset
+#   node-validation teardown
+#   node-validation health        [--base-url URL]
+#
+# Ports (reconciled with dev-4nodes — the audit's :3002 assumption is stale):
+#   Bob  BE :3000  FE :5173   |   Alice BE :3001  FE :5174   |   LPS :3010
+# regtest mode allocates DYNAMIC ports; the real URLs are read from the harness
+# manifest.json and EXPORTED (E2E_BOB_BACKEND_URL/BOB_URL) so specs that still default
+# to :3002 pick up the correct origin without editing them.
+set -euo pipefail
+
+log()  { printf 'node-validation: %s\n' "$*" >&2; }
+die()  { printf 'node-validation: %s\n' "$*" >&2; exit 1; }
+json() { printf '%s\n' "$1"; }
+
+# ---- resolve the node repo root --------------------------------------------
+repo_root() {
+  if [ -n "${NODE_REPO:-}" ]; then printf '%s' "$NODE_REPO"; return; fi
+  local d="$PWD"
+  while [ "$d" != "/" ]; do
+    [ -f "$d/Makefile" ] && [ -d "$d/tests/e2e" ] && { printf '%s' "$d"; return; }
+    d="$(dirname "$d")"
+  done
+  git rev-parse --show-toplevel 2>/dev/null || die "cannot locate node repo (set NODE_REPO)"
+}
+REPO="$(repo_root)"
+MANIFEST="$REPO/tests/e2e/.regtest/manifest.json"   # regtest-up writes a cluster manifest
+HEALTH_PATH="/api/auth/onboarding-status"
+BOB_FE="http://127.0.0.1:5173"
+BOB_BE_4NODES="http://127.0.0.1:3000"
+
+have_lps() { [ -f "$REPO/../lps/Cargo.toml" ] || [ -f "${LPS_DIR:-}/Cargo.toml" ]; }
+
+manifest_bob_api() { [ -f "$MANIFEST" ] && jq -r '.bob.apiBaseUrl // empty' "$MANIFEST" 2>/dev/null || true; }
+
+# ---- verbs ------------------------------------------------------------------
+cmd_bring_up() {
+  local mode="regtest" ui=0
+  while [ $# -gt 0 ]; do case "$1" in --mode) mode="$2"; shift 2;; --ui) ui=1; shift;; *) shift;; esac; done
+  # auto-pick: 4nodes needs the external LPS repo; else fall back to the LPS-optional regtest cluster
+  [ "$mode" = "4nodes" ] && ! have_lps && { log "LPS repo not found — falling back to regtest (LPS-optional)"; mode="regtest"; }
+
+  local base_url frontend_url
+  case "$mode" in
+    4nodes)
+      log "starting make dev-4nodes (Bob BE :3000 / FE :5173) — backgrounded"
+      ( cd "$REPO" && nohup make dev-4nodes >/tmp/node-4nodes.log 2>&1 & echo $! > /tmp/node-4nodes.pid )
+      base_url="$BOB_BE_4NODES/api"; frontend_url="$BOB_FE"
+      ;;
+    regtest)
+      log "starting persistent regtest cluster (bitcoind+alice+bob+channel) via regtest-up.ts — backgrounded"
+      ( cd "$REPO" && nohup make regtest-up >/tmp/node-regtest.log 2>&1 & echo $! > /tmp/node-regtest.pid ) || \
+      ( cd "$REPO/tests/e2e" && nohup bun run src/harness/regtest-up.ts >/tmp/node-regtest.log 2>&1 & echo $! > /tmp/node-regtest.pid )
+      # wait for the manifest, then read Bob's dynamically-allocated API base
+      local i api=""
+      for i in $(seq 1 120); do api="$(manifest_bob_api)"; [ -n "$api" ] && break; sleep 1; done
+      [ -n "$api" ] || die "regtest manifest not written in 120s (see /tmp/node-regtest.log)"
+      base_url="$api"
+      # export the true Bob origin so specs defaulting to :3002 use the right one
+      export E2E_BOB_BACKEND_URL="${api%/api}"; export BOB_URL="${api%/api}"
+      if [ "$ui" = 1 ]; then
+        log "starting Bob FE (Vite) proxied to $base_url — TODO: verify VITE_API_BASE_URL wiring live"
+        ( cd "$REPO/node-ui" 2>/dev/null && nohup env VITE_API_BASE_URL="$base_url" yarn dev --mode bob --port 5173 >/tmp/node-fe.log 2>&1 & echo $! > /tmp/node-fe.pid ) || true
+        frontend_url="$BOB_FE"
+      fi
+      ;;
+    *) die "bring_up: --mode must be regtest|4nodes";;
+  esac
+  cmd_health --base-url "$base_url" >/dev/null 2>&1 && local ready=true || local ready=false
+  json "{\"base_url\":\"$base_url\",\"frontend_url\":\"${frontend_url:-}\",\"health_url\":\"$base_url$HEALTH_PATH\",\"mode\":\"$mode\",\"ready\":$ready}"
+}
+
+cmd_health() {
+  local base=""; while [ $# -gt 0 ]; do case "$1" in --base-url) base="$2"; shift 2;; *) shift;; esac; done
+  [ -n "$base" ] || base="$(manifest_bob_api)"; [ -n "$base" ] || base="$BOB_BE_4NODES/api"
+  local code; code="$(curl -s -o /dev/null -w '%{http_code}' "$base$HEALTH_PATH" 2>/dev/null || echo 000)"
+  # also probe runtimes readiness
+  local rt; rt="$(curl -s -o /dev/null -w '%{http_code}' "$base/v2/runtimes" 2>/dev/null || echo 000)"
+  log "health $base$HEALTH_PATH -> $code ; /v2/runtimes -> $rt"
+  [ "$code" = "200" ] || [ "$code" = "401" ] # 401 = up but unauth (still "up")
+}
+
+cmd_seed() {
+  local sats=100000; while [ $# -gt 0 ]; do case "$1" in --channel-sats) sats="$2"; shift 2;; *) shift;; esac; done
+  # regtest-up already funds one alice→bob channel and start() cross-seeds peer endpoints,
+  # so for the default regtest cluster seed is a no-op. Extra seeding (friend handshake,
+  # bigger channel) is a documented TODO — wire to the repo's channel/onboarding scenarios.
+  if [ -f "$MANIFEST" ]; then
+    local ch; ch="$(jq -r '.channel.channelId // "none"' "$MANIFEST" 2>/dev/null)"
+    log "seed: regtest cluster already has channel=$ch (channelSats target $sats)"
+    json "{\"seeded\":true,\"channel\":\"$ch\"}"
+  else
+    log "seed: no manifest — TODO wire fundAndOpenChannel/friend-handshake for non-regtest bring_up"
+    json "{\"seeded\":false,\"reason\":\"no manifest; run bring_up first\"}"
+  fi
+}
+
+cmd_auth_session() {
+  local user="e2e-agent" base=""
+  while [ $# -gt 0 ]; do case "$1" in --username) user="$2"; shift 2;; --base-url) base="$2"; shift 2;; *) shift;; esac; done
+  [ -n "$base" ] || base="$(manifest_bob_api)"; [ -n "$base" ] || base="$BOB_BE_4NODES/api"
+  # onboard via the existing AuthClient (BIP39 + OTS) and print { session, inject_target }.
+  # inject_target is the LIVE FE origin so the agentic driver injects into :5173, not the SPA.
+  local helper; helper="$(dirname "$(dirname "$0")")/helpers/agent-session.ts"
+  ( cd "$REPO/tests/e2e" && NODE_VALIDATION_REPO="$REPO" NODE_VALIDATION_BASE_URL="${base%/api}" NODE_VALIDATION_USER="$user" NODE_VALIDATION_INJECT_TARGET="$BOB_FE" bun run "$helper" ) \
+    || die "auth_session failed (see stderr) — TODO verify AuthClient import path live"
+}
+
+cmd_drive_scenario() {
+  local tier="" scenario=""
+  while [ $# -gt 0 ]; do case "$1" in --tier) tier="$2"; shift 2;; --scenario) scenario="$2"; shift 2;; *) shift;; esac; done
+  case "$tier" in
+    api) ( cd "$REPO" && yarn workspace @node/e2e-tests test:api );;
+    ui)  ( cd "$REPO" && yarn workspace @node/e2e-tests test:ui );;
+    agentic)
+      # the union runs the general engine; emit the args it should pass
+      local base; base="$(manifest_bob_api)"; [ -n "$base" ] || base="$BOB_BE_4NODES/api"
+      json "{\"delegate\":\"e2e-agentic\",\"args\":{\"driver\":\"chrome\",\"base_url\":\"$base\",\"scenarios_dir\":\"e2e/scenarios\"}}"
+      ;;
+    *) die "drive_scenario: --tier must be api|ui|agentic";;
+  esac
+}
+
+cmd_assert() {
+  # Playwright DOM/role assertions + axe-core a11y run inside test:ui; ai-judge is the agentic engine.
+  local a11y=0; while [ $# -gt 0 ]; do case "$1" in --a11y) a11y=1; shift;; *) shift;; esac; done
+  ( cd "$REPO" && yarn workspace @node/e2e-tests test:ui )
+}
+
+cmd_reset() {
+  # composed reset-e2e: stop dev processes + clean node data + regtest teardown + clear reports
+  log "reset: make dev-clean + regtest teardown + clear e2e-report"
+  ( cd "$REPO" && make dev-clean ) || true
+  [ -f /tmp/node-regtest.pid ] && kill "$(cat /tmp/node-regtest.pid)" 2>/dev/null || true
+  rm -f "$MANIFEST" 2>/dev/null || true
+  rm -rf "$REPO/tests/e2e/e2e-report" 2>/dev/null || true
+  json "{\"ok\":true}"
+}
+
+cmd_teardown() {
+  ( cd "$REPO" && make dev-down ) || true
+  for p in /tmp/node-regtest.pid /tmp/node-4nodes.pid /tmp/node-fe.pid; do [ -f "$p" ] && kill "$(cat "$p")" 2>/dev/null || true; done
+  json "{\"ok\":true}"
+}
+
+command -v jq >/dev/null || die "jq required"
+command -v curl >/dev/null || die "curl required"
+sub="${1:-}"; [ -n "$sub" ] || die "usage: node-validation <bring_up|seed|auth_session|drive_scenario|assert|reset|teardown|health> ..."; shift
+case "$sub" in
+  bring_up) cmd_bring_up "$@";; seed) cmd_seed "$@";; auth_session) cmd_auth_session "$@";;
+  drive_scenario) cmd_drive_scenario "$@";; assert) cmd_assert "$@";; reset) cmd_reset "$@";;
+  teardown) cmd_teardown "$@";; health) cmd_health "$@";;
+  *) die "unknown verb '$sub'";;
+esac

@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "dev-cycle git-ops config (.dev-cycle/config.json)",
+  "type": "object",
+  "required": ["provider", "tracker"],
+  "properties": {
+    "provider": { "type": "string", "description": "git-ops provider id; selects providers/<provider>/", "examples": ["github"] },
+    "tracker": {
+      "type": "object",
+      "required": ["owner", "repo", "project"],
+      "properties": {
+        "owner": { "type": "string", "description": "org/user that owns the repo AND the ProjectV2 board" },
+        "repo": { "type": "string" },
+        "project": { "type": "integer", "description": "ProjectV2 number" },
+        "assignee": { "type": "string", "default": "@me" },
+        "statuses": { "type": "array", "items": { "type": "string" },
+          "default": ["Backlog", "Ready", "In progress", "In review", "Done"] },
+        "done_autocloses": { "type": "boolean", "default": true,
+          "description": "true if setting Status→Done auto-closes the issue via a board workflow (never cycle to Done in a dry-run)" }
+      }
+    },
+    "scm": {
+      "type": "object",
+      "properties": {
+        "branch_prefix": { "type": "string", "default": "NNN-kebab",
+          "description": "NNN-kebab -> <zero-padded issue#>-<slug>; kebab -> <slug>; any other value is used as a literal prefix" },
+        "commit_convention": { "type": "string", "enum": ["conventional", "plain"], "default": "conventional" },
+        "pr_closes_parent": { "type": "boolean", "default": true, "description": "append 'Closes #<parent>' to PR body" }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "description": "consumed by the dev-cycle plugin, not git-ops; present here so one config file covers both adapters",
+      "properties": {
+        "provider": { "type": "string" },
+        "driver": { "type": "string" },
+        "scenarios_dir": { "type": "string" }
+      }
+    },
+    "loops_default": { "type": "array", "items": { "type": "string" },
+      "description": "optional default generative-loop selection consumed by the dev-cycle kickoff prompt" }
+  }
+}

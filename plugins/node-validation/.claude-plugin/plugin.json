@@ -1,0 +1,10 @@
+{
+  "name": "node-validation",
+  "version": "0.1.0",
+  "description": "Reference dev-cycle validation provider for the econ-v1 node repo. Implements the validation contract by wrapping node's existing tests/e2e primitives (AuthClient, TestHarness.startWithChannel, regtest-up persistent cluster, injectAuth, ai-reporter) plus audit-flagged gaps (LPS-optional bring-up, live-FE-origin session, reset-e2e, :3002/:3000 port reconciliation). First consumer of the dev-cycle E2E harness contract.",
+  "author": {
+    "name": "lamtuanvu",
+    "github": "lamtuanvu"
+  },
+  "keywords": ["dev-cycle", "validation", "e2e", "node", "econ-v1", "lightning", "provider"]
+}

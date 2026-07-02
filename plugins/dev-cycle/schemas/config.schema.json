@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": ".dev-cycle/config.json (authoritative superset)",
+  "type": "object",
+  "required": ["provider", "tracker"],
+  "properties": {
+    "provider": { "type": "string", "description": "git-ops provider id (selects the tracker/SCM adapter)" },
+    "tracker": {
+      "type": "object",
+      "required": ["owner", "repo", "project"],
+      "properties": {
+        "owner": { "type": "string" },
+        "repo": { "type": "string" },
+        "project": { "type": "integer" },
+        "assignee": { "type": "string", "default": "@me" },
+        "statuses": { "type": "array", "items": { "type": "string" } },
+        "done_autocloses": { "type": "boolean", "default": true }
+      }
+    },
+    "scm": {
+      "type": "object",
+      "properties": {
+        "branch_prefix": { "type": "string", "default": "NNN-kebab" },
+        "commit_convention": { "type": "string", "enum": ["conventional", "plain"], "default": "conventional" },
+        "pr_closes_parent": { "type": "boolean", "default": true }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "description": "E2E harness backend; absent → E2E tiers skip",
+      "properties": {
+        "provider": { "type": "string", "description": "validation-provider plugin id" },
+        "driver": { "type": "string", "enum": ["chrome", "preview", "playwright"], "default": "chrome" },
+        "scenarios_dir": { "type": "string", "default": "e2e/scenarios" }
+      }
+    },
+    "loops_default": {
+      "type": "array",
+      "items": { "enum": ["write-prd", "design-architecture", "speckit-implement", "review-code", "fix-bug"] },
+      "description": "default generative-loop selection to pre-check in the kickoff prompt (the prompt answer wins)"
+    }
+  }
+}

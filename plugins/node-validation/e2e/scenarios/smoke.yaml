@@ -1,0 +1,10 @@
+# node smoke scenario (agentic tier). Adapt origins to your bring_up output.
+name: node-smoke
+description: A freshly-onboarded node user reaches their dashboard
+requires:
+  auth: custom-script        # node-validation auth_session (BIP39 + OTS) injects the session
+steps:
+  - navigate: "/"
+  - wait: { for: "networkidle" }
+  - expect: { selector: "#root", visible: true }
+  - ai_judge: "The node dashboard renders (balance/channels/runtimes visible), no auth wall or error banner, no perpetual spinner"
