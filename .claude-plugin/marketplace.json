@@ -1,13 +1,13 @@
 {
   "name": "lamtuanvu-marketplace",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Agent skills marketplace — portable skills for AI coding agents, plus Claude Code plugins",
   "owner": {
     "name": "lamtuanvu",
     "github": "lamtuanvu"
   },
   "metadata": {
-    "version": "1.6.0",
+    "version": "1.7.0",
     "pluginRoot": "./plugins"
   },
   "plugins": [
@@ -20,7 +20,7 @@
     },
     {
       "name": "loop-templates",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "description": "Adversarial, self-verifying agentic loop engines (dynamic Workflows) + routing skill. Bundles research/PRD/architecture/build/fix/review engines and the dev-cycle verification engines: speckit-implement (parallel gated implement), plan-review, analyze-consistency.",
       "source": "./plugins/loop-templates",
       "keywords": ["workflow", "loop", "adversarial", "verification", "agentic", "speckit", "dev-cycle"]
@@ -34,7 +34,7 @@
     },
     {
       "name": "dev-cycle",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "description": "The union: run a feature end-to-end through SpecKit + loop-templates + a swappable git-ops tracker + a browser-driven E2E validation harness. General/distributable; hooks project-specifics via provider contracts and .dev-cycle/config.json. Hosts the E2E harness engine (agentic browser driver + ai-judge). Co-install speckit-orchestrator + loop-templates.",
       "source": "./plugins/dev-cycle",
       "keywords": ["dev-cycle", "speckit", "workflow", "e2e", "validation", "orchestration", "pipeline"]
