@@ -41,4 +41,9 @@ rmdir .dev-cycle/hooks 2>/dev/null || true
 check "drive agentic emits delegate" "bash '$H' drive_scenario --tier agentic --manifest '$MAN' | jq -e '.delegate==\"e2e-agentic\"' >/dev/null"
 check "drive api no-op when absent" "bash '$H' drive_scenario --tier api --manifest '$MAN' | jq -e 'has(\"tier\")' >/dev/null"
 
+# Task 6 assertions
+check "observe writes evidence dir" "bash '$H' observe --manifest '$MAN' | jq -e '.evidence_dir!=null' >/dev/null"
+check "inject_fault refused w/o confirm" "bash '$H' inject_fault --name noop --manifest '$MAN' | jq -e '.skipped!=null' >/dev/null"
+check "inject_fault runs w/ confirm" "bash '$H' inject_fault --name noop --manifest '$MAN' --confirm | jq -e '.ok==true' >/dev/null"
+
 echo "PASS=$pass FAIL=$fail"; [ "$fail" = 0 ]
