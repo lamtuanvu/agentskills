@@ -20,9 +20,10 @@ verb_bring_up() {
   for i in $(seq 0 $((count-1))); do
     n="$(mf ".services[$i].name")"; up="$(mf ".services[$i].up")"; health="$(mf ".services[$i].health")"
     hlog "bring_up: starting $n -> $up"
-    ( HARNESS_DRY="${HARNESS_DRY:-0}"; run_cmd "$up" >/tmp/harness-$n.log 2>&1 & echo $! >/tmp/harness-$n.pid )
-    if _poll_health "$health"; then hlog "  $n healthy"; else hlog "  $n NOT healthy"; ready=false; fi
-    results="$(jq -c --arg n "$n" --argjson r "$([ "$ready" = true ] && echo true || echo false)" '. + [{name:$n, healthy:$r}]' <<<"$results")"
+    ( run_cmd "$up" >/tmp/harness-$n.log 2>&1 & )
+    local svc_ok=true
+    if _poll_health "$health"; then hlog "  $n healthy"; else hlog "  $n NOT healthy"; ready=false; svc_ok=false; fi
+    results="$(jq -c --arg n "$n" --argjson r "$([ "$svc_ok" = true ] && echo true || echo false)" '. + [{name:$n, healthy:$r}]' <<<"$results")"
   done
   jout "$(jq -nc --argjson ready "$ready" --arg fe "$(mf '.frontend_url')" --argjson s "$results" '{ready:$ready, frontend_url:$fe, services:$s}')"
 }
