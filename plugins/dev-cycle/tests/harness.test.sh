@@ -18,4 +18,10 @@ check "bring_up reports ready" "bash '$H' bring_up --manifest '$MAN' | jq -e '.r
 check "health reports ready" "bash '$H' health --manifest '$MAN' | jq -e '.ready==true' >/dev/null"
 check "teardown ok" "bash '$H' teardown --manifest '$MAN' | jq -e '.ok==true' >/dev/null"
 
+# Task 4 assertions
+check "seed ok" "bash '$H' seed --manifest '$MAN' | jq -e '.seeded==true' >/dev/null"
+check "auth none returns session key" "bash '$H' auth_session --manifest '$MAN' | jq -e 'has(\"session\")' >/dev/null"
+check "reset refused without --confirm" "bash '$H' reset --manifest '$MAN' | jq -e '.skipped!=null' >/dev/null"
+check "reset runs with --confirm" "bash '$H' reset --manifest '$MAN' --confirm | jq -e '.ok==true' >/dev/null"
+
 echo "PASS=$pass FAIL=$fail"; [ "$fail" = 0 ]
