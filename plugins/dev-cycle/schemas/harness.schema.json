@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": ".dev-cycle/harness.json — generic harness manifest",
+  "type": "object",
+  "required": ["services", "scenarios_dir", "driver"],
+  "properties": {
+    "services": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "required": ["name", "up", "health"],
+        "properties": {
+          "name": { "type": "string" },
+          "up": { "type": "string", "description": "command to start the service" },
+          "down": { "type": "string" },
+          "restart": { "type": "string" },
+          "health": { "type": "string", "description": "http URL polled until 200/401, or a shell command (prefix 'sh:')" }
+        }
+      }
+    },
+    "frontend_url": { "type": "string" },
+    "auth": {
+      "type": "object",
+      "properties": {
+        "strategy": { "enum": ["none", "form-login", "jwt-inject", "storageState", "custom-script"] },
+        "hook": { "type": "string", "description": "hook name under .dev-cycle/hooks/ for custom-script" },
+        "login_url": { "type": "string" },
+        "credentials": { "type": "object" }
+      }
+    },
+    "seed": { "type": "object", "properties": { "cmd": { "type": "string" }, "hook": { "type": "string" } } },
+    "reset": { "type": "object", "properties": { "targets": { "type": "array", "items": { "type": "string" } }, "cmd": { "type": "string" }, "destructive": { "type": "boolean", "default": true } } },
+    "observe": {
+      "type": "object",
+      "properties": {
+        "logs": { "type": "array", "items": { "type": "string" } },
+        "console": { "type": "boolean" },
+        "network": { "type": "boolean" },
+        "metrics": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "faults": {
+      "type": "array",
+      "items": { "type": "object", "required": ["name", "inject", "restore"], "properties": {
+        "name": { "type": "string" }, "inject": { "type": "string" }, "restore": { "type": "string" } } }
+    },
+    "scenarios_dir": { "type": "string" },
+    "driver": { "enum": ["chrome", "preview", "playwright"] },
+    "evidence_dir": { "type": "string", "default": ".dev-cycle/evidence" },
+    "tests": { "type": "object", "properties": { "api": { "type": "string" }, "ui": { "type": "string" } } }
+  }
+}

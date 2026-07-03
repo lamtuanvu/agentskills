@@ -1,0 +1,11 @@
+# Sample dev-cycle E2E scenario. Copy into <validation.scenarios_dir>/ and adapt.
+# Executed by the general e2e-agentic.js engine (agentic tier) or a scripted provider.
+name: smoke
+description: The app comes up and the landing page renders without errors
+requires:
+  auth: none            # storageState | jwt-inject | form-login | custom-script | none
+steps:
+  - navigate: "/"
+  - wait: { for: "networkidle" }
+  - expect: { selector: "#app", visible: true }
+  - ai_judge: "The landing page renders real content (not a blank page, error banner, or perpetual spinner)"

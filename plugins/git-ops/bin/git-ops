@@ -1,0 +1,178 @@
+#!/usr/bin/env bash
+# git-ops — swappable SCM + tracker adapter for the dev-cycle union.
+#
+# The union calls ONE entrypoint at each pipeline boundary:
+#     git-ops on <event> --json '<payload>'
+# Unknown events are a no-op (forward-compatible). Every handler is an idempotent
+# reconcile, safe to re-run on stop-hook re-entry.
+#
+# Also: git-ops init | status <slug> | doctor
+#
+# Config resolution order (first hit wins per key):
+#   1. .dev-cycle/config.json at/above the current directory
+#   2. env vars (DC_OWNER/DC_REPO/DC_PROJECT/DC_ASSIGNEE, DEV_CYCLE_DRYRUN)
+#   3. none -> "pure mode": log the intended projection, mutate nothing
+set -euo pipefail
+
+# ---- locate plugin root / providers ----------------------------------------
+SELF="${BASH_SOURCE[0]}"; while [ -h "$SELF" ]; do SELF="$(readlink "$SELF")"; done
+BIN_DIR="$(cd "$(dirname "$SELF")" && pwd)"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$BIN_DIR")}"
+PROVIDERS_DIR="$PLUGIN_ROOT/providers"
+
+log()  { printf 'git-ops: %s\n' "$*" >&2; }
+die()  { printf 'git-ops: %s\n' "$*" >&2; exit 1; }
+
+# ---- config discovery -------------------------------------------------------
+find_config() {
+  local d="$PWD"
+  while [ "$d" != "/" ]; do
+    [ -f "$d/.dev-cycle/config.json" ] && { printf '%s' "$d/.dev-cycle/config.json"; return 0; }
+    d="$(dirname "$d")"
+  done
+  return 1
+}
+CONFIG_FILE="$(find_config || true)"
+PROVIDER=""; PURE=0
+cfg() { [ -n "$CONFIG_FILE" ] && jq -r "$1 // empty" "$CONFIG_FILE" 2>/dev/null || true; }
+
+if [ -n "$CONFIG_FILE" ]; then
+  command -v jq >/dev/null || die "jq required to read $CONFIG_FILE"
+  PROVIDER="$(cfg '.provider')"
+  export DC_OWNER="${DC_OWNER:-$(cfg '.tracker.owner')}"
+  export DC_REPO="${DC_REPO:-$(cfg '.tracker.repo')}"
+  export DC_PROJECT="${DC_PROJECT:-$(cfg '.tracker.project')}"
+  export DC_ASSIGNEE="${DC_ASSIGNEE:-$(cfg '.tracker.assignee')}"
+  export GITOPS_BRANCH_PREFIX="${GITOPS_BRANCH_PREFIX:-$(cfg '.scm.branch_prefix')}"
+  export GITOPS_COMMIT_CONVENTION="${GITOPS_COMMIT_CONVENTION:-$(cfg '.scm.commit_convention')}"
+  export GITOPS_PR_CLOSES_PARENT="${GITOPS_PR_CLOSES_PARENT:-$(cfg '.scm.pr_closes_parent')}"
+fi
+# env-only fallback (back-compat): if no config but DC_OWNER/REPO/PROJECT set, still run github
+[ -z "$PROVIDER" ] && [ -n "${DC_OWNER:-}" ] && [ -n "${DC_REPO:-}" ] && [ -n "${DC_PROJECT:-}" ] && PROVIDER="github"
+[ -z "$PROVIDER" ] && PURE=1
+export DEV_CYCLE_DRYRUN="${DEV_CYCLE_DRYRUN:-0}"
+
+TRACKER="$PROVIDERS_DIR/$PROVIDER/tracker.sh"
+SCM="$PROVIDERS_DIR/$PROVIDER/scm.sh"
+tracker() { [ "$PURE" = 1 ] && { log "[pure] tracker $*"; return 0; }; [ -f "$TRACKER" ] || die "provider '$PROVIDER' has no tracker.sh"; bash "$TRACKER" "$@"; }
+scm()     { [ "$PURE" = 1 ] && { log "[pure] scm $*"; return 0; };     [ -f "$SCM" ]     || die "provider '$PROVIDER' has no scm.sh";     bash "$SCM" "$@"; }
+
+today() { date +%F; }
+
+# ---- event dispatch ---------------------------------------------------------
+on_event() {
+  local event="$1" payload="$2"
+  command -v jq >/dev/null || die "jq required to parse event payload"
+  pget() { jq -r --arg k "$1" '.[$k] // empty' <<<"$payload"; }
+  local slug; slug="$(pget slug)"
+  case "$event" in
+    feature.kickoff)
+      [ -n "$slug" ] || die "feature.kickoff: payload.slug required"
+      local title tdate parent
+      title="$(pget title)"; tdate="$(pget target_date)"
+      parent="$(tracker ensure "$slug" --title "${title:-$slug}" ${tdate:+--target-date "$tdate"} | tail -1)"
+      scm branch "$slug" ${parent:+--number "$parent"} || true
+      ;;
+    spec.done)
+      local sp start; sp="$(pget summary_path)"; [ -n "$sp" ] || sp="$(pget spec_path)"
+      start="$(pget start_date)"; [ -n "$start" ] || start="$(today)"
+      tracker status "$slug" "In progress"
+      local parent; parent="$(tracker show "$slug" 2>/dev/null | awk 'NR==1{gsub(/#/,"",$1);print $1}')"
+      [ -n "$parent" ] && tracker field "$parent" start-date "$start" || true
+      [ -n "$sp" ] && [ -f "$sp" ] && tracker comment "$slug" --body-file "$sp" || true
+      ;;
+    plan.done)
+      local pp rv; pp="$(pget plan_path)"; rv="$(pget reviews)"
+      if [ -n "$pp" ] && [ -f "$pp" ]; then tracker comment "$slug" --body-file "$pp"
+      else tracker comment "$slug" --body "Plan ready.${rv:+ Reviews: $rv}"; fi
+      [ -n "$rv" ] && tracker comment "$slug" --body "Plan-review verdicts: $rv" || true
+      ;;
+    tasks.done)
+      local tp; tp="$(pget tasks_path)"
+      [ -n "$tp" ] && [ -f "$tp" ] && tracker tasks "$slug" --file "$tp" || log "tasks.done: no tasks_path file, skipped"
+      ;;
+    task.completed)
+      local desc; desc="$(pget task_desc)"; [ -n "$desc" ] || desc="$(pget task_id)"
+      [ -n "$desc" ] && tracker check "$slug" "$desc" || log "task.completed: no task_desc/task_id"
+      ;;
+    pr.opened)
+      tracker status "$slug" "In review"
+      ;;
+    review.done)
+      local verdict; verdict="$(pget verdict)"
+      tracker comment "$slug" --body "Review verdict: ${verdict:-see reviews}"
+      ;;
+    merged)
+      # reconcile→Done moves the board AND (on a done-autocloses board) closes the issue
+      tracker reconcile "$slug" "Done"
+      ;;
+    blocked)
+      local reason step; reason="$(pget reason)"; step="$(pget step)"
+      tracker label "$slug" blocked --color "b60205" --desc "dev-cycle blocked"
+      tracker comment "$slug" --body "🚫 Blocked at **${step:-?}**: ${reason:-no reason given}"
+      # deliberately do NOT change status — blocked must not green the ticket
+      ;;
+    *)
+      log "unknown event '$event' — no-op (forward-compatible)"; exit 0
+      ;;
+  esac
+}
+
+# ---- top-level --------------------------------------------------------------
+cmd_doctor() {
+  local ok=1
+  command -v gh >/dev/null && log "gh: present" || { log "gh: MISSING"; ok=0; }
+  command -v jq >/dev/null && log "jq: present" || { log "jq: MISSING"; ok=0; }
+  command -v git >/dev/null && log "git: present" || { log "git: MISSING"; ok=0; }
+  if [ -n "$CONFIG_FILE" ]; then log "config: $CONFIG_FILE (provider=$PROVIDER)"; else log "config: none -> PURE mode"; fi
+  if [ "$PURE" = 0 ]; then
+    log "tracker: $TRACKER"; [ -f "$TRACKER" ] || { log "  tracker.sh MISSING"; ok=0; }
+    log "scm: $SCM"; [ -f "$SCM" ] || { log "  scm.sh MISSING"; ok=0; }
+    log "owner/repo/project: ${DC_OWNER:-?}/${DC_REPO:-?} project ${DC_PROJECT:-?}"
+    # dry-run reconcile parity check (mutates nothing)
+    log "dry-run reconcile check:"
+    DEV_CYCLE_DRYRUN=1 tracker reconcile "__doctor__" "Backlog" 2>&1 | sed 's/^/    /' || log "    (no issues for __doctor__ — expected)"
+  fi
+  [ "$ok" = 1 ] && log "doctor: OK" || die "doctor: problems found"
+}
+
+cmd_init() {
+  local dir="$PWD/.dev-cycle"; mkdir -p "$dir"
+  local f="$dir/config.json"
+  [ -f "$f" ] && die "config already exists: $f"
+  cp "$PLUGIN_ROOT/providers/github/config.example.json" "$f" 2>/dev/null || cat > "$f" <<'JSON'
+{
+  "provider": "github",
+  "tracker": { "owner": "OWNER", "repo": "REPO", "project": 0,
+    "statuses": ["Backlog","Ready","In progress","In review","Done"], "done_autocloses": true },
+  "scm": { "branch_prefix": "NNN-kebab", "commit_convention": "conventional", "pr_closes_parent": true }
+}
+JSON
+  log "wrote $f — edit owner/repo/project, then run: git-ops doctor"
+}
+
+main() {
+  local cmd="${1:-}"; shift || true
+  case "$cmd" in
+    on)
+      local event="${1:-}"; shift || true
+      local payload="{}"
+      while [ $# -gt 0 ]; do case "$1" in --json) payload="$2"; shift 2;; *) shift;; esac; done
+      [ -n "$event" ] || die "usage: git-ops on <event> --json '<payload>'"
+      on_event "$event" "$payload"
+      ;;
+    status) local slug="${1:-}"; [ -n "$slug" ] || die "usage: git-ops status <slug>"; tracker show "$slug";;
+    doctor) cmd_doctor;;
+    init)   cmd_init;;
+    ""|-h|--help) cat >&2 <<EOF
+git-ops — SCM + tracker adapter
+  git-ops on <event> --json '<payload>'   project a lifecycle event (see README for the 9 events)
+  git-ops status <slug>                    show a feature's issues
+  git-ops doctor                           verify deps + config + dry-run reconcile
+  git-ops init                             scaffold .dev-cycle/config.json
+EOF
+      ;;
+    *) die "unknown command '$cmd' (try: on|status|doctor|init)";;
+  esac
+}
+main "$@"

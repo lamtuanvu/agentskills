@@ -1,0 +1,14 @@
+{
+  "services": [
+    { "name": "web", "up": "python3 -m http.server 8099 --directory FIXTURE_DIR", "down": "sh:pkill -f 'http.server 8099' || true", "health": "http://127.0.0.1:8099/index.html" }
+  ],
+  "frontend_url": "http://127.0.0.1:8099/index.html",
+  "auth": { "strategy": "none" },
+  "seed": { "cmd": "sh:echo seeded" },
+  "reset": { "targets": [], "cmd": "sh:echo reset", "destructive": true },
+  "observe": { "logs": [], "console": true, "network": true, "metrics": [] },
+  "faults": [{ "name": "noop", "inject": "sh:echo inject", "restore": "sh:echo restore" }],
+  "scenarios_dir": "plugins/dev-cycle/tests/fixtures",
+  "driver": "chrome",
+  "evidence_dir": ".dev-cycle/evidence"
+}

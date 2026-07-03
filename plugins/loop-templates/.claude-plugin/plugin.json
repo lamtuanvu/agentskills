@@ -1,0 +1,10 @@
+{
+  "name": "loop-templates",
+  "version": "0.2.0",
+  "description": "A pack of adversarial, self-verifying agentic loop engines (dynamic Workflows) plus a routing skill. Includes research/PRD/architecture/build/fix/review engines and the dev-cycle verification engines (speckit-implement, plan-review, analyze-consistency). Invoke via Workflow({ scriptPath: \"${CLAUDE_PLUGIN_ROOT}/workflows/<name>.js\" }).",
+  "author": {
+    "name": "lamtuanvu",
+    "github": "lamtuanvu"
+  },
+  "keywords": ["workflow", "loop", "adversarial", "verification", "agentic", "speckit", "dev-cycle"]
+}
