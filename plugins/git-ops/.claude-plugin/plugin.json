@@ -1,6 +1,6 @@
 {
   "name": "git-ops",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Swappable SCM + issue-tracker adapter for the dev-cycle. Exposes one entrypoint — `git-ops on <event> --json '<payload>'` — that projects pipeline lifecycle events onto a project tracker + branch/commit/PR conventions. Ships a config-driven GitHub provider (Issues + ProjectV2 + gh SCM). Author alternate providers (gitlab/linear/jira) implementing the same events.",
   "author": {
     "name": "lamtuanvu",
