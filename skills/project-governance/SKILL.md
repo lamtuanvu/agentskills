@@ -3,7 +3,7 @@ name: project-governance
 description: "Use when establishing or maintaining a project's constitution, persistent context, scoped rules, conventions, boundaries, or reviewer responsibilities across development workflows. Applies to governance initialization, context handoffs, and compliance reviews; does not select or run a development pipeline."
 metadata:
   author: lamtuanvu
-  version: "1.0.0"
+  version: "2.0.0"
 ---
 
 # Project Governance

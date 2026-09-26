@@ -1,6 +1,6 @@
 {
   "name": "project-governance",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Workflow-independent project governance: constitution, context index, scoped rules, boundaries and reviewer responsibilities. Bundles the project-governance skill, init/add-reviewer/review/status commands, and optional specialist reviewer and brainstorm agents. Works with Superpowers, dev-cycle, a custom workflow or direct development.",
   "author": {
     "name": "lamtuanvu",
