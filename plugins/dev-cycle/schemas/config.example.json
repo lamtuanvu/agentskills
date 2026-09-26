@@ -5,7 +5,13 @@
     "repo": "your-repo",
     "project": 1,
     "assignee": "@me",
-    "statuses": ["Backlog", "Ready", "In progress", "In review", "Done"],
+    "statuses": [
+      "Backlog",
+      "Ready",
+      "In progress",
+      "In review",
+      "Done"
+    ],
     "done_autocloses": true
   },
   "scm": {
@@ -13,10 +19,18 @@
     "commit_convention": "conventional",
     "pr_closes_parent": true
   },
+  "artifacts_dir": "docs/features",
+  "governance": {
+    "constitution": ".project/constitution.md",
+    "context": ".project/context.md"
+  },
   "validation": {
     "provider": "your-validation-provider",
     "driver": "chrome",
     "scenarios_dir": "e2e/scenarios"
   },
-  "loops_default": ["speckit-implement", "review-code"]
+  "loops_default": [
+    "implement-tasks",
+    "review-code"
+  ]
 }

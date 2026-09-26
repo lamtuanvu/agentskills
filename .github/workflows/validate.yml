@@ -142,6 +142,10 @@ jobs:
           print(f'Validated {validated} skill files')
           "
 
+      - name: Check bundled skill copies match canonical skills
+        run: |
+          diff -r skills/project-governance plugins/project-governance/skills/project-governance
+
       - name: Check local plugin sources exist
         run: |
           python -c "

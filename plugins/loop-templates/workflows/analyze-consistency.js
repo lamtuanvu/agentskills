@@ -1,6 +1,6 @@
 export const meta = {
   name: 'analyze-consistency',
-  description: 'Default-on cross-artifact consistency check: run pairwise consistency passes (spec↔plan, plan↔tasks, tasks↔spec) in parallel, then reconcile contradictions/gaps into a single verdict. Replaces speckit\'s single-threaded analyze. args: { feature, spec_path?, plan_path?, tasks_path?, reviews_dir?, model_fast?, model_work?, model_judge? }',
+  description: 'Default-on cross-artifact consistency check: run pairwise consistency passes (spec↔plan, plan↔tasks, tasks↔spec) in parallel, then reconcile contradictions/gaps into a single verdict. Replaces a single-threaded analyze pass. args: { feature, spec_path?, plan_path?, tasks_path?, reviews_dir?, model_fast?, model_work?, model_judge? }',
   phases: [{ title: 'Pairwise' }, { title: 'Reconcile' }, { title: 'Persist' }],
 }
 
@@ -8,10 +8,10 @@ export const meta = {
 if (typeof args === 'string') { try { args = JSON.parse(args) } catch (e) { args = {} } }
 
 const feature = (args && (args.feature || args.task)) || 'the feature'
-const specPath = (args && args.spec_path) || `specs/${feature}/spec.md`
-const planPath = (args && args.plan_path) || `specs/${feature}/plan.md`
-const tasksPath = (args && args.tasks_path) || `specs/${feature}/tasks.md`
-const reviewsDir = (args && args.reviews_dir) || `specs/${feature}/reviews`
+const specPath = (args && args.spec_path) || `docs/features/${feature}/spec.md`
+const planPath = (args && args.plan_path) || `docs/features/${feature}/plan.md`
+const tasksPath = (args && args.tasks_path) || `docs/features/${feature}/tasks.md`
+const reviewsDir = (args && args.reviews_dir) || `docs/features/${feature}/reviews`
 const M = { fast: (args && args.model_fast) || 'haiku', work: (args && args.model_work) || 'sonnet', judge: (args && args.model_judge) || 'opus' }
 
 const CONTRA = { type: 'object', properties: { contradictions: { type: 'array', items: { type: 'object', properties: {

@@ -106,20 +106,23 @@ Every pattern also accepts `{ task }` as a generic fallback for its primary inpu
 
 ### dev-cycle engines (used by the `dev-cycle` plugin)
 
-Three engines target the SpecKit pipeline. They are invoked by the `dev-cycle`
-union at specific step boundaries, but run standalone too:
+Three engines target a feature's spec → plan → tasks artifacts. They are invoked by
+the `dev-cycle` union at specific step boundaries, but run standalone too. All accept
+an optional `governance` string — the project-governance context packet (constitution,
+context index and applicable rule paths/IDs) — which grounds every agent.
 
 | name | role | args |
 |---|---|---|
-| `speckit-implement` | **generative** — implement file-disjoint task groups in parallel isolated worktrees; each group gated by a MEASUREMENT verify (ac-verifier RUNS the group tests, keys on exit code) + bug-hunter, min-2-round loop + circuit breaker; one test-writer per group (test-files only). | `{ feature, spec_path?, plan_path?, tasks_path?, groups[], ungrouped[], max_iter?, circuit_breaker? }` |
-| `plan-review` | **verification (default-on)** — perspective-diverse reviewer personas (speckit `agentType`s) → dedup → refute-verify CRITICAL/HIGH → severity-blocking; persists `specs/<feature>/reviews/plan-review.md`. | `{ feature, plan_path?, spec_path?, reviews_dir? }` |
-| `analyze-consistency` | **verification (default-on)** — pairwise cross-artifact checks (spec↔plan, plan↔tasks, tasks↔spec) → reconcile; persists `specs/<feature>/reviews/analyze.md`. | `{ feature, spec_path?, plan_path?, tasks_path?, reviews_dir? }` |
+| `implement-tasks` | **generative** — implement file-disjoint task groups in parallel isolated worktrees; each group gated by a MEASUREMENT verify (ac-verifier RUNS the group tests, keys on exit code) + bug-hunter, min-2-round loop + circuit breaker; one test-writer per group (test-files only). | `{ feature, spec_path?, plan_path?, tasks_path?, governance?, groups[], ungrouped[], max_iter?, circuit_breaker? }` |
+| `plan-review` | **verification (default-on)** — perspective-diverse reviewer personas (`project-governance:*-reviewer` agentTypes) → dedup → refute-verify CRITICAL/HIGH → severity-blocking; persists `docs/features/<feature>/reviews/plan-review.md`. | `{ feature, plan_path?, spec_path?, reviews_dir?, governance? }` |
+| `analyze-consistency` | **verification (default-on)** — pairwise cross-artifact checks (spec↔plan, plan↔tasks, tasks↔spec) → reconcile; persists `docs/features/<feature>/reviews/analyze.md`. | `{ feature, spec_path?, plan_path?, tasks_path?, reviews_dir? }` |
 
-`groups`/`ungrouped` for `speckit-implement` are the JSON produced by speckit's
-`partition_tasks.py <tasks.md> --max-groups N` (connected-components by shared file
-— no two parallel groups touch the same file). All three accept the `model_*` tier
-overrides. `speckit-implement` returns `{ status, completed_task_ids[],
-completed_groups[], failed_groups[], bugs }`.
+`groups`/`ungrouped` for `implement-tasks` are the JSON produced by dev-cycle's
+`scripts/partition_tasks.py <tasks.md> --max-groups N` (connected-components by
+shared file — no two parallel groups touch the same file). All three accept the
+`model_*` tier overrides. `implement-tasks` returns `{ status, completed_task_ids[],
+completed_groups[], failed_groups[], bugs }`. `plan-review` needs the
+`project-governance` plugin installed for its reviewer agentTypes.
 
 ## Shared conventions (apply to every pattern)
 

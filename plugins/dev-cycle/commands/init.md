@@ -1,5 +1,5 @@
 ---
-description: Onboard the current repo to dev-cycle — bootstrap speckit, propose the git-ops block, detect the stack, write .dev-cycle/config.json
+description: Onboard the current repo to dev-cycle — check governance, propose the git-ops block, detect the stack, write .dev-cycle/config.json
 ---
 
 # /dev-cycle:init
@@ -8,8 +8,11 @@ Onboarding wizard. Get this repo ready to run features through the union. Do the
 order, confirming with the user at each decision (do not guess the tracker board number).
 
 ## 1. Preconditions
-- Verify co-installs: `speckit-orchestrator` and `loop-templates` plugins present. If
-  speckit is not initialized in this repo, run `/speckit-orchestrator:init` first.
+- Verify co-installs: `project-governance` and `loop-templates` plugins present.
+- Verify project governance exists (constitution + context index, discovered via the
+  agent instructions' context section or `.project/`). If missing, run
+  `/project-governance:init` first — dev-cycle never drafts governance itself.
+  Record the resolved paths in `governance` in the config below.
 - Confirm this is a git repo (`git rev-parse`). If not, offer `git init`.
 
 ## 2. git-ops block (config-only for GitHub)
@@ -27,7 +30,8 @@ order, confirming with the user at each decision (do not guess the tracker board
   whether there is a frontend (for the validation block). Note the frontend URL/port.
 
 ## 4. Write .dev-cycle/config.json
-- Compose `tracker` + `scm` + `validation` + `loops_default`. Use
+- Compose `tracker` + `scm` + `artifacts_dir` (default `docs/features`) + `governance`
+  + `validation` + `loops_default`. Use
   `${CLAUDE_PLUGIN_ROOT}/schemas/config.example.json` as the template and
   `schemas/config.schema.json` to validate. Leave `validation.provider` empty for now
   (fill via `/dev-cycle:init-validation`) unless a provider already exists.

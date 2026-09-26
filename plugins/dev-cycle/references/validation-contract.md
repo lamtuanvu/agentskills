@@ -49,7 +49,7 @@ code. The `agentic-harness` skill auto-builds the manifest and self-verifies it.
 
 On failure → feed the provider's failure feed (e.g. an `ai-report.json`) + the failing
 scenario + screenshots to `fix-bug.js` (if pre-authorized). The `drive_scenario`
-pass/fail is ALSO the **measurement signal** consumed by `speckit-implement.js`'s gate.
+pass/fail is ALSO the **measurement signal** consumed by `implement-tasks.js` (loop-templates)'s gate.
 
 ## Discovery
 

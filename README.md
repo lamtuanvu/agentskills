@@ -1,6 +1,6 @@
 # agentskills
 
-[![Skills](https://img.shields.io/badge/skills-11-blue)](skills/)
+[![Skills](https://img.shields.io/badge/skills-12-blue)](skills/)
 [![Plugins](https://img.shields.io/badge/plugins-4-purple)](plugins/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 [![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](docs/CONTRIBUTING.md)
@@ -34,8 +34,7 @@ npx skills add lamtuanvu/agentskills@gemini-image-gen -g -y
 | [mcp-builder](skills/mcp-builder) | Guide and templates for building MCP servers (Python/Node) |
 | [plugin-creator](skills/plugin-creator) | Scaffold and develop Claude Code plugins incrementally |
 | [skill-creator](skills/skill-creator) | Guide for creating agentskills-compatible SKILL.md packages |
-| [speckit-brainstorm](skills/speckit-brainstorm) | Brainstorm a feature, define requirements, produce `idea.md` |
-| [speckit-orchestrator](skills/speckit-orchestrator) | Run the SpecKit pipeline: specify → clarify → plan → tasks → analyze → implement |
+| [project-governance](skills/project-governance) | Establish and maintain project constitution, context, scoped rules, boundaries and reviewers with any development workflow |
 | [vectcut-api](skills/vectcut-api) | CapCut/JianYing video editing API reference and Python client |
 | [video-proposal](skills/video-proposal) | Analyze a clip collection and propose short-form video concepts |
 
@@ -57,9 +56,9 @@ Once installed, invoke a skill by describing the task. Your agent will automatic
 ## Claude Code Plugins
 
 Plugins are Claude Code-specific. They extend skills with:
-- **Stop hooks** — auto-continue pipelines without user intervention
-- **Slash commands** — `/speckit-orchestrator:execute`, `/speckit-orchestrator:status`, etc.
-- **Agent teams** — parallel specialist agents for plan review and implementation
+- **Slash commands** — `/project-governance:init`, `/dev-cycle:run`, etc.
+- **Specialist agents** — reviewer and brainstorm agents for plan review and implementation
+- **Workflow engines** — adversarial, self-verifying loops (`loop-templates`)
 
 ### Install
 
@@ -68,7 +67,7 @@ Plugins are Claude Code-specific. They extend skills with:
 /plugin marketplace add https://github.com/lamtuanvu/agentskills
 
 # Step 2 — install a plugin
-/plugin install speckit-orchestrator@lamtuanvu-marketplace
+/plugin install project-governance@lamtuanvu-marketplace
 /plugin install github-ci@lamtuanvu-marketplace
 ```
 
@@ -76,64 +75,77 @@ Plugins are Claude Code-specific. They extend skills with:
 
 | Plugin | Enhances | What it adds |
 |--------|----------|--------------|
-| [speckit-orchestrator](plugins/speckit-orchestrator) | speckit-brainstorm + speckit-orchestrator skills | Stop hook auto-continuation, `/speckit-orchestrator:*` commands, parallel agent teams for plan review and implementation |
+| [project-governance](plugins/project-governance) | project-governance skill (bundled) | `init`, `add-reviewer`, `review`, `status` commands; specialist reviewer and brainstorm agents |
+| [dev-cycle](plugins/dev-cycle) | project-governance + loop-templates | Governed spec → plan → tasks → implement pipeline, git-ops tracker projection, browser-driven E2E harness |
+| [loop-templates](plugins/loop-templates) | — | Adversarial, self-verifying Workflow engines (research, PRD, architecture, build, fix, review, implement-tasks) |
+| [git-ops](plugins/git-ops) | dev-cycle | Swappable SCM + issue-tracker adapter for dev-cycle lifecycle events |
 | [github-ci](plugins/github-ci) | — | Webhook listener for GitHub CI failures; pushes failures into your Claude Code session for automated diagnosis and fix |
 | [capcut-api](https://github.com/lamtuanvu/VectCutAPI) | vectcut-api skill | CapCut/JianYing MCP tools for direct video editing |
 | [ai-video-editor](https://github.com/lamtuanvu/video-to-structured-metadata) | video-proposal skill | Scene detection, audio transcription, vision analysis for video metadata |
 
 ---
 
-## SpecKit Workflow
+## Project Governance — Any Workflow
 
-SpecKit is a structured feature development pipeline built on the speckit-brainstorm and speckit-orchestrator skills.
-
-```
-speckit-brainstorm → idea.md → speckit-orchestrator → spec → clarify → plan → tasks → analyze → implement
-```
-
-### With any agent (skill only)
+`project-governance` establishes and maintains a project's constitution, persistent
+context, scoped conventions, boundaries and reviewer responsibilities, then lets you
+develop with Superpowers, `dev-cycle`, a custom workflow, or direct development.
 
 ```bash
-# 1. Install the skills
-npx skills add lamtuanvu/agentskills@speckit-brainstorm -g -y
-npx skills add lamtuanvu/agentskills@speckit-orchestrator -g -y
+# Claude Code plugin (skill + commands + reviewer agents)
+/plugin install project-governance@lamtuanvu-marketplace
+/project-governance:init
 
-# 2. Brainstorm a feature
-# Invoke speckit-brainstorm with your feature idea.
-# It explores the codebase, asks clarifying questions,
-# and produces docs/features/<name>/idea.md on approval.
-
-# 3. Run the pipeline
-# Invoke speckit-orchestrator.
-# It reads idea.md, runs each step, and pauses at clarify for your review.
-# After clarify, re-invoke to continue through to implementation.
+# Or the portable skill alone, for any agent
+npx skills add lamtuanvu/agentskills@project-governance -g -y
 ```
-
-### With Claude Code (skill + plugin)
-
-```
-# Install skills first
-npx skills add lamtuanvu/agentskills@speckit-brainstorm -g -y
-npx skills add lamtuanvu/agentskills@speckit-orchestrator -g -y
-
-# Then install the plugin for full automation
-/plugin install speckit-orchestrator@lamtuanvu-marketplace
-```
-
-The plugin adds:
-- **Auto-continuation**: stop hook feeds `/speckit-orchestrator:execute` after each step — pipeline runs to completion unattended (pauses only at the clarify checkpoint)
-- **Parallel brainstorm**: agent team (architect, UX analyst, feasibility analyst, devil's advocate) analyzes your feature from all angles before writing `idea.md`
-- **Parallel plan review**: security, performance, conventions, and UI specialists review the plan in parallel
-- **Parallel implementation**: tasks partitioned across multiple implementers + dedicated test-writer and QA reviewer
 
 Commands:
+
+```text
+/project-governance:init [notes]               # Constitution, context, rules, reviewers
+/project-governance:add-reviewer <name> <focus>
+/project-governance:review [paths | base | PR] # Review against applicable rules
+/project-governance:status                     # Established vs proposed, drift, gaps
 ```
-/speckit-orchestrator:brainstorm <feature description>
-/speckit-orchestrator:execute
-/speckit-orchestrator:status
-/speckit-orchestrator:rollback <step>
-/speckit-orchestrator:cancel-pipeline
+
+Or describe the task:
+
+```text
+Use project-governance to initialize this project's constitution and rules.
+We use Superpowers for development; preserve our existing AGENTS.md and ADRs.
+
+Load the project context and rules relevant to this API change.
+Review this plan against the applicable project rules.
 ```
+
+For a new project, the default layout is:
+
+```text
+.project/
+  constitution.md       # Principles, boundaries, authority, amendments
+  context.md            # Project context and canonical rule/reviewer index
+  rules/<aspect>.md     # Rules scoped to relevant areas and changes
+  reviewers/<name>.md   # Review responsibilities, checks and evidence
+  decisions.md          # Decisions and accepted exceptions, when needed
+```
+
+Existing constitutions, architecture docs and policies can stay in their current
+locations. Initialization indexes them and adds a small context-loading section to
+agent instructions. It distinguishes established agreements from proposed rules,
+and tailors reviewers and validation to the actual project. It requires no feature
+branch, pipeline state, stop hook, or particular test tiers.
+
+To run features end-to-end on top of governance, use `dev-cycle`
+(`/dev-cycle:init`, then `/dev-cycle:run "<feature>"`).
+
+**Migration from speckit-orchestrator:** the `speckit-orchestrator` plugin and the
+`speckit-orchestrator`/`speckit-brainstorm` skills were removed. Uninstall them
+(`/plugin uninstall speckit-orchestrator@lamtuanvu-marketplace`) and install
+`project-governance`. An existing `.specify/memory/constitution.md` is picked up by
+`/project-governance:init` and can stay canonical. Reviewer agents moved from
+`speckit-orchestrator:*` to `project-governance:*`. The `speckit-implement` engine is
+now `implement-tasks`; update `loops_default` in `.dev-cycle/config.json`.
 
 ---
 
@@ -142,33 +154,25 @@ Commands:
 ```
 agentskills/
 ├── skills/                          # Portable agentskills.io skills
-│   ├── speckit-orchestrator/
-│   │   ├── SKILL.md                 # Pipeline instructions + loop logic
-│   │   ├── scripts/                 # Shared Python scripts (canonical)
-│   │   │   ├── orchestrator.py      # State machine
-│   │   │   ├── verify_state.py      # State verification
-│   │   │   ├── partition_tasks.py   # Task partitioning
-│   │   │   └── init_feature.py      # Feature initialization
-│   │   └── references/              # Step-by-step guides
-│   │       ├── step-specify.md
-│   │       ├── step-clarify.md
-│   │       ├── step-plan.md
-│   │       ├── step-tasks.md
-│   │       ├── step-analyze.md
-│   │       └── step-implement.md
+│   ├── project-governance/
+│   │   ├── SKILL.md                 # Workflow-independent project contract
+│   │   ├── references/              # Init, context, review and maintenance
+│   │   └── assets/                  # Constitution, rule and reviewer templates
 │   └── ...                          # Other skills
 ├── plugins/                         # Claude Code plugins
-│   ├── speckit-orchestrator/
-│   │   ├── hooks/                   # Stop hook (auto-continuation)
-│   │   ├── commands/                # Slash commands
-│   │   └── agents/                  # Team agent definitions
-│   │   # Scripts inherited from skills/speckit-orchestrator/scripts/
+│   ├── project-governance/
+│   │   ├── commands/                # init, add-reviewer, review, status
+│   │   ├── agents/                  # Specialist reviewer/brainstorm agents
+│   │   └── skills/project-governance/  # Bundled copy of skills/project-governance
+│   ├── dev-cycle/                   # Governed feature pipeline + E2E harness
+│   ├── loop-templates/              # Workflow engines
+│   ├── git-ops/                     # SCM + tracker adapter
 │   └── github-ci/                   # CI failure MCP channel server
 └── .claude-plugin/
     └── marketplace.json             # Claude Code plugin registry
 ```
 
-**Inheritance**: The `speckit-orchestrator` plugin has no scripts of its own — it references `skills/speckit-orchestrator/scripts/` directly. The skill is the base; the plugin is the Claude Code enhancement layer.
+**Bundled skill**: `skills/project-governance/` is canonical. The plugin ships a copy at `plugins/project-governance/skills/project-governance/` because installed plugins cannot reach files outside their own directory; CI fails if the two copies differ.
 
 ---
 

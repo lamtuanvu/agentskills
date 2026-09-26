@@ -1,6 +1,6 @@
 export const meta = {
   name: 'plan-review',
-  description: 'Default-on plan/spec verification: dispatch perspective-diverse reviewer personas (security/performance/conventions/ui via speckit agentTypes) in parallel → dedup findings by location → adversarially refute-verify every CRITICAL/HIGH (kills false positives) → severity drives blocking (CRITICAL always blocks). Persists specs/<feature>/reviews/plan-review.md. No agent-teams flag needed. args: { feature, plan_path?, spec_path?, reviews_dir?, model_fast?, model_work?, model_judge? }',
+  description: 'Default-on plan/spec verification: dispatch perspective-diverse reviewer personas (security/performance/conventions/ui via project-governance agentTypes, grounded in the project\'s applicable rules) in parallel → dedup findings by location → adversarially refute-verify every CRITICAL/HIGH (kills false positives) → severity drives blocking (CRITICAL always blocks). Persists docs/features/<feature>/reviews/plan-review.md. No agent-teams flag needed. args: { feature, plan_path?, spec_path?, reviews_dir?, governance?, model_fast?, model_work?, model_judge? }',
   phases: [{ title: 'Review' }, { title: 'Verify' }, { title: 'Persist' }],
 }
 
@@ -8,9 +8,10 @@ export const meta = {
 if (typeof args === 'string') { try { args = JSON.parse(args) } catch (e) { args = {} } }
 
 const feature = (args && (args.feature || args.task)) || 'the feature'
-const planPath = (args && args.plan_path) || `specs/${feature}/plan.md`
-const specPath = (args && args.spec_path) || `specs/${feature}/spec.md`
-const reviewsDir = (args && args.reviews_dir) || `specs/${feature}/reviews`
+const planPath = (args && args.plan_path) || `docs/features/${feature}/plan.md`
+const specPath = (args && args.spec_path) || `docs/features/${feature}/spec.md`
+const reviewsDir = (args && args.reviews_dir) || `docs/features/${feature}/reviews`
+const governance = (args && args.governance) || '' // project-governance context packet: constitution/context/rule paths + rule IDs
 const M = { fast: (args && args.model_fast) || 'haiku', work: (args && args.model_work) || 'sonnet', judge: (args && args.model_judge) || 'opus' }
 
 const FIND = { type: 'object', properties: { findings: { type: 'array', items: { type: 'object', properties: {
@@ -18,14 +19,14 @@ const FIND = { type: 'object', properties: { findings: { type: 'array', items: {
 }, required: ['lens', 'severity', 'location', 'issue'] } } }, required: ['findings'] }
 const VERDICT = { type: 'object', properties: { refuted: { type: 'boolean' }, reasoning: { type: 'string' }, adjusted_severity: { enum: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] } }, required: ['refuted', 'reasoning'] }
 
-// perspective-diverse reviewers (NOT identical skeptics) — dispatched by speckit-orchestrator agentType
+// perspective-diverse reviewers (NOT identical skeptics) — dispatched by project-governance agentType
 const REVIEWERS = [
-  { key: 'security', agentType: 'speckit-orchestrator:security-reviewer' },
-  { key: 'performance', agentType: 'speckit-orchestrator:performance-reviewer' },
-  { key: 'conventions', agentType: 'speckit-orchestrator:conventions-reviewer' },
-  { key: 'ui', agentType: 'speckit-orchestrator:ui-reviewer' },
+  { key: 'security', agentType: 'project-governance:security-reviewer' },
+  { key: 'performance', agentType: 'project-governance:performance-reviewer' },
+  { key: 'conventions', agentType: 'project-governance:conventions-reviewer' },
+  { key: 'ui', agentType: 'project-governance:ui-reviewer' },
 ]
-const grounding = `Feature: ${feature}. Plan: ${planPath}. Spec: ${specPath}. Read both artifacts from disk before reviewing.`
+const grounding = `Feature: ${feature}. Plan: ${planPath}. Spec: ${specPath}. Read both artifacts from disk before reviewing.${governance ? ` Project governance (load applicable established rules; cite rule IDs; proposed rules are advisory only): ${governance}` : ''}`
 
 phase('Review')
 const batches = (await parallel(REVIEWERS.map(r => () =>

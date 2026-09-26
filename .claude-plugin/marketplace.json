@@ -12,18 +12,18 @@
   },
   "plugins": [
     {
-      "name": "speckit-orchestrator",
-      "version": "2.3.0",
-      "description": "SpecKit pipeline orchestrator — brainstorm, execute specify→clarify→plan→tasks→analyze→implement, auto-continue via stop hook",
-      "source": "./plugins/speckit-orchestrator",
-      "keywords": ["speckit", "workflow", "automation", "pipeline", "development", "brainstorm"]
+      "name": "project-governance",
+      "version": "1.0.0",
+      "description": "Workflow-independent project governance: constitution, context index, scoped rules, boundaries and reviewer responsibilities. Bundles the project-governance skill, init/add-reviewer/review/status commands, and specialist reviewer/brainstorm agents. Works with Superpowers, dev-cycle, a custom workflow or direct development.",
+      "source": "./plugins/project-governance",
+      "keywords": ["governance", "constitution", "rules", "conventions", "reviewers", "context", "workflow"]
     },
     {
       "name": "loop-templates",
       "version": "0.3.0",
-      "description": "Adversarial, self-verifying agentic loop engines (dynamic Workflows) + routing skill. Bundles research/PRD/architecture/build/fix/review engines and the dev-cycle verification engines: speckit-implement (parallel gated implement), plan-review, analyze-consistency.",
+      "description": "Adversarial, self-verifying agentic loop engines (dynamic Workflows) + routing skill. Bundles research/PRD/architecture/build/fix/review engines and the dev-cycle verification engines: implement-tasks (parallel gated implement), plan-review, analyze-consistency.",
       "source": "./plugins/loop-templates",
-      "keywords": ["workflow", "loop", "adversarial", "verification", "agentic", "speckit", "dev-cycle"]
+      "keywords": ["workflow", "loop", "adversarial", "verification", "agentic", "governance", "dev-cycle"]
     },
     {
       "name": "git-ops",
@@ -35,9 +35,9 @@
     {
       "name": "dev-cycle",
       "version": "0.3.0",
-      "description": "The union: run a feature end-to-end through SpecKit + loop-templates + a swappable git-ops tracker + a browser-driven E2E validation harness. General/distributable; hooks project-specifics via provider contracts and .dev-cycle/config.json. Hosts the E2E harness engine (agentic browser driver + ai-judge). Co-install speckit-orchestrator + loop-templates.",
+      "description": "The union: run a feature end-to-end through a governed spec→plan→tasks→implement spine (project-governance) + loop-templates + a swappable git-ops tracker + a browser-driven E2E validation harness. General/distributable; hooks project-specifics via provider contracts and .dev-cycle/config.json. Co-install project-governance + loop-templates.",
       "source": "./plugins/dev-cycle",
-      "keywords": ["dev-cycle", "speckit", "workflow", "e2e", "validation", "orchestration", "pipeline"]
+      "keywords": ["dev-cycle", "governance", "workflow", "e2e", "validation", "orchestration", "pipeline"]
     },
     {
       "name": "ai-video-editor",

@@ -1,7 +1,8 @@
 ---
 name: dev-cycle
 description: >
-  Run a feature end-to-end through the team dev cycle: the SpecKit pipeline (spine) +
+  Run a feature end-to-end through the team dev cycle: a governed, resumable
+  spec → plan → tasks → implement pipeline (spine, grounded in project-governance) +
   loop-templates workflows (adversarial compute engines) + a swappable git-ops tracker
   projection + a browser-driven E2E validation harness. Use when the user says "start
   working on <feature>", "take this ticket through the cycle", "build and track <X>", or
@@ -15,13 +16,17 @@ description: >
 
 Compose four things — **don't fuse them**:
 
-- **Control plane — `speckit-orchestrator` (the spine).** Stateful, resumable,
-  human-gated pipeline: specify → clarify → plan → plan-review → tasks → analyze →
-  implement → test-and-fix → review-loop. Owns the pipeline cursor (state in
-  `docs/features/<feature>/orchestrator-state.json`, matched by git branch) and fires
-  the lifecycle events below.
+- **Control plane — this skill (the spine).** Stateful, resumable, human-gated
+  pipeline: specify → clarify → plan → plan-review → tasks → analyze → implement →
+  test-and-fix → review-loop. Owns the pipeline cursor in
+  `.dev-cycle/features/<slug>/state.json` (matched by git branch) and fires the
+  lifecycle events below.
+- **Governance — `project-governance` (the constraints).** The project's constitution,
+  context index, scoped rules and reviewer definitions. Loaded once at kickoff and
+  passed to every step and engine. Governance defines constraints; this skill owns
+  the steps. Never amend a rule to make a step pass.
 - **Compute plane — loop-templates workflows (pure engines).** `write-prd`,
-  `design-architecture`, `speckit-implement`, `plan-review`, `analyze-consistency`,
+  `design-architecture`, `implement-tasks`, `plan-review`, `analyze-consistency`,
   `fix-bug`, `review-code`, etc. Invoked AT specific steps, run in the background,
   return structured artifacts. **They never touch the tracker.**
 - **Projection — the tracker = shared truth via `git-ops`.** The union emits lifecycle
@@ -32,12 +37,14 @@ Compose four things — **don't fuse them**:
   provider implementing the validation contract.
 
 **Golden rule:** the union mutates the tracker ONLY through `git-ops on <event>`. Every
-event handler is an idempotent *reconcile* (safe to re-run on stop-hook re-entry). Never
+event handler is an idempotent *reconcile* (safe to re-run on resume). Never
 hand-write `gh`/GraphQL/tracker API calls for lifecycle ops.
 
 ## Required co-installs
 
-- **`speckit-orchestrator`** — the pipeline spine + `partition_tasks.py`.
+- **`project-governance`** — the governance skill + specialist reviewer agents used
+  by `plan-review.js` (`project-governance:*-reviewer`). Governance must be
+  initialized in the repo (`/project-governance:init`).
 - **`loop-templates`** — the Workflow engines (invoked by `scriptPath`).
 - **`git-ops`** (optional) — the tracker/SCM adapter. Absent → tracker projection runs
   in **pure mode** (logs intent, mutates nothing).
@@ -57,10 +64,45 @@ validation-provider plugin. Either absent → that concern runs pure/skipped.
   "tracker": { "owner": "your-org", "repo": "your-repo", "project": 1,
     "statuses": ["Backlog","Ready","In progress","In review","Done"], "done_autocloses": true },
   "scm": { "branch_prefix": "NNN-kebab", "commit_convention": "conventional", "pr_closes_parent": true },
+  "artifacts_dir": "docs/features",
+  "governance": { "constitution": ".project/constitution.md", "context": ".project/context.md" },
   "validation": { "provider": "your-validation-provider", "driver": "chrome", "scenarios_dir": "e2e/scenarios" },
-  "loops_default": ["speckit-implement","review-code"]
+  "loops_default": ["implement-tasks","review-code"]
 }
 ```
+
+## Feature artifacts & state
+
+Per feature `<slug>`, with `A = config.artifacts_dir` (default `docs/features`):
+
+- `A/<slug>/spec.md` — problem, user stories, **acceptance criteria** (stable IDs,
+  e.g. `AC-1`), P0 success criteria, out-of-scope, open questions.
+- `A/<slug>/plan.md` — architecture, components, data/API changes, test strategy,
+  and which governance rule IDs apply.
+- `A/<slug>/tasks.md` — one `- [ ] T001 <task> — files: \`path/a.ts\`, \`path/b.ts\``
+  line (or `### Task N:` section) per task, naming the files each task touches so
+  `partition_tasks.py` can group them; each task cites the AC IDs it satisfies.
+- `A/<slug>/reviews/` — plan-review, analyze and review reports.
+- `.dev-cycle/features/<slug>/state.json` — the cursor:
+  `{ slug, branch, current_step, steps: {<step>: pending|in_progress|completed|blocked},
+  loops: [...opted-in], needs_resolve, blocked_reason, paths: {spec,plan,tasks,reviews} }`.
+
+**Authoring is pluggable.** If the team plans with another workflow (e.g. Superpowers
+brainstorming → writing-plans), use its outputs: record their paths in `state.paths`
+instead of rewriting them, and only fill what is missing (e.g. derive `tasks.md` in
+the format above from the plan). Keep each workflow's artifacts where it expects them.
+
+**Governance packet.** At kickoff, apply project-governance's "Apply context"
+operation: read the constitution and context index (from `config.governance`, else
+the agent instructions' context section, else `.project/`), select the rules and
+reviewer definitions applicable to this feature's affected areas, and store their
+paths + rule IDs as `state.governance`. Pass it as the `governance` arg to every
+engine and into every authoring step. If governance is missing, stop and point the
+user at `/project-governance:init` — do not invent rules.
+
+**Resume.** Re-invoking `/dev-cycle:run` (or `/dev-cycle:run <slug>`) reads
+`state.json` and continues from `current_step`; there is no stop hook. Every step is
+idempotent against the files on disk.
 
 ## Kickoff opt-in (once per feature)
 
@@ -69,13 +111,13 @@ At kickoff, issue **one `AskUserQuestion`** (multi-select), pre-checking any box
 in `config.loops_default`:
 
 > Which generative loop engines should run this feature? (each ~300–500k tokens)
-> ☐ write-prd (spec) ☐ design-architecture (plan) ☐ speckit-implement (impl, parallel+gated)
+> ☐ write-prd (spec) ☐ design-architecture (plan) ☐ implement-tasks (impl, parallel+gated)
 > ☐ review-code (review) ☐ auto-run fix-bug if test-and-fix fails
 
 - `fix-bug` is a **pre-authorization** (reactive — you don't know at kickoff whether
   tests fail).
-- **Persist the selection ONCE** into `orchestrator-state.json` (alongside the pipeline
-  cursor so it survives stop-hook re-entry/resume) and consume it at each boundary —
+- **Persist the selection ONCE** into `state.json` (`loops`, alongside the pipeline
+  cursor so it survives resume) and consume it at each boundary —
   **never re-prompt mid-run.**
 - **clarify stays a human gate** — never automate it.
 
@@ -88,7 +130,7 @@ in `config.loops_default`:
 | **plan-review** | **`plan-review.js`** | verification | **default-on** |
 | tasks | inline completeness critic | verification | **default-on** (light) |
 | **analyze** | **`analyze-consistency.js`** | verification | **default-on** |
-| **implement** | **`speckit-implement.js`** | generative | default when implement loop opted-in |
+| **implement** | **`implement-tasks.js`** | generative | default when implement loop opted-in |
 | test-and-fix | `fix-bug.js` | reactive | on `needs_resolve` (pre-authorized at kickoff) |
 | review-loop | `review-code.js` | verification | opt-in |
 
@@ -106,21 +148,20 @@ surface it (see Autonomy).
 
 ## How the union drives the implement step
 
-Default implement executor = **`speckit-implement.js`** (speckit's native agent-teams
-implement is kept only as a fallback when Workflow is unavailable). At the `implement`
-boundary:
+Default implement executor = **`implement-tasks.js`**. When the implement loop is not
+opted in (or Workflow is unavailable), implement the tasks sequentially in this
+session, test-first, ticking each task and firing `task.completed` as it lands. At
+the `implement` boundary:
 
-1. `python ${speckit}/scripts/partition_tasks.py specs/<feature>/tasks.md --max-groups <N>`
+1. `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/partition_tasks.py <tasks_path> --max-groups <N>`
    → group JSON `{parallelizable, groups[{id,tasks[],files[]}], ungrouped[]}`.
-2. Write `implement: in_progress` + a `team_state`-style marker to
-   `orchestrator-state.json`.
-3. `Workflow({ scriptPath: "<loop-templates>/workflows/speckit-implement.js",
-   args: { feature, spec_path, plan_path, tasks_path, groups, ungrouped, max_iter } })`,
+2. Write `steps.implement: in_progress` to `state.json`.
+3. `Workflow({ scriptPath: "<loop-templates>/workflows/implement-tasks.js",
+   args: { feature, spec_path, plan_path, tasks_path, governance, groups, ungrouped, max_iter } })`,
    await it.
 4. On `DONE`: fire `task.completed` to git-ops for **each** returned `completed_task_ids[]`
    entry (ticks the tracker checklist); write `implement: completed`; advance
-   `current_step`. On `STUCK`: write `needs_resolve` and escalate (the stop hook
-   surfaces it).
+   `current_step`. On `STUCK`: write `needs_resolve` and escalate (stop and surface it).
 
 ## Reactive loops (hooks on existing states)
 
@@ -131,11 +172,12 @@ boundary:
 
 ## Verification engines (default-on)
 
-- **`plan-review.js`** replaces speckit's agent-teams reviewer phase: perspective-diverse
-  reviewer personas → dedup → refute-verify → severity-blocking → writes
-  `specs/<feature>/reviews/plan-review.md`. No `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`
-  flag.
-- **`analyze-consistency.js`** replaces speckit's single-threaded analyze: pairwise
+- **`plan-review.js`**: perspective-diverse reviewer personas
+  (`project-governance:*-reviewer`, grounded in `state.governance`) → dedup →
+  refute-verify → severity-blocking → writes `<A>/<slug>/reviews/plan-review.md`. Also
+  run any **required** reviewer from the project's reviewer definitions that applies to
+  the plan; a missing required review is unmet, never a pass.
+- **`analyze-consistency.js`**: pairwise
   spec↔plan / plan↔tasks / tasks↔spec → reconcile → writes `reviews/analyze.md`.
 - **tasks completeness critic** — one inline adversarial "what's missing/uncovered?"
   agent appended to the tasks step (NOT a full engine — a loop here would be token
@@ -159,7 +201,7 @@ validation provider implementing the **validation contract** (see
 
 On failure → `fix-bug.js` (if pre-authorized) with the provider's `ai-report`/failing
 scenario/screenshots as the repro. The same `drive_scenario` result is the **measurement
-signal** for `speckit-implement.js`'s gate. **No `validation.provider` set → E2E tiers
+signal** for `implement-tasks.js`'s gate. **No `validation.provider` set → E2E tiers
 skip gracefully** (like git-ops pure mode). See `references/scenario-schema.md` for the
 declarative scenario format and `references/driver-abstraction.md` for driver choice.
 
@@ -193,27 +235,33 @@ contract). Unknown events no-op; handlers are idempotent.
 1. **Kickoff.** Derive a kebab `<slug>`. Issue the opt-in prompt, persist the selection.
    `git-ops on feature.kickoff --json '{"slug":…,"title":…,"target_date":…}'` (ensures
    the tracking ticket + branch).
-2. **Spec.** `speckit.specify`/`clarify` (opt-in `write-prd` for grounding). Then
-   `git-ops on spec.done`.
-3. **Plan.** `speckit.plan` (opt-in `design-architecture`). Run `plan-review.js`
-   (default-on) → `git-ops on plan.done` with the reviews.
-4. **Tasks.** `speckit.tasks` + inline completeness critic → `git-ops on tasks.done`
-   (syncs the checklist into the ticket).
+   Load the governance packet into `state.governance`.
+2. **Spec.** Write `spec.md` from the request + governance (opt-in `write-prd` for
+   grounding). **Clarify:** list the open questions and ambiguities and stop for the
+   human; fold the answers into the spec. Then `git-ops on spec.done`.
+3. **Plan.** Write `plan.md` against the constitution's boundaries and the applicable
+   rules (opt-in `design-architecture`). Run `plan-review.js` (default-on) → fix
+   must-fix findings → `git-ops on plan.done` with the reviews.
+4. **Tasks.** Write `tasks.md` in the partitionable format + inline completeness
+   critic → `git-ops on tasks.done` (syncs the checklist into the ticket).
 5. **Analyze.** `analyze-consistency.js` (default-on). BLOCKED → `git-ops on blocked`.
-6. **Implement.** Partition → `speckit-implement.js` → per `completed_task_ids`, fire
+6. **Implement.** Partition → `implement-tasks.js` → per `completed_task_ids`, fire
    `git-ops on task.completed`.
 7. **Test-and-fix.** Run the E2E tier ladder; on failure, reactive `fix-bug.js`.
 8. **PR + close.** Open the PR (`Closes #<parent>`) → `git-ops on pr.opened`
-   (Status→In review). Run `review-code.js` (opt-in) → `git-ops on review.done`. On
+   (Status→In review). Run a governance review of the branch diff (project-governance
+   "Review the requested scope") plus `review-code.js` (opt-in) → `git-ops on review.done`. On
    merge → `git-ops on merged` (reconciles Status→Done, which auto-closes).
 
 ## Gotchas (learned)
 
+- **Governance is read, not rewritten.** Findings that conflict with a rule go to the
+  human via the project's amendment process; never edit `.project/` to pass a gate.
 - **Workflow `args` arrive as a JSON string** — engines already `JSON.parse`; new ones
   must normalize at the top.
 - **`Workflow({name})` = cached snapshot** — use `scriptPath` for edited/bundled engines.
 - **Subagent cwd defaults to the MAIN checkout** — parallel implementers must pin
-  cwd+branch (speckit-implement uses `isolation: 'worktree'` on file-disjoint groups).
+  cwd+branch (implement-tasks uses `isolation: 'worktree'` on file-disjoint groups).
 - **`Closes` ≠ Status move** — the `merged` event reconciles Status to Done explicitly.
 - **Never cycle to Done in a dry-run** on a done-autocloses board — it closes the issue;
   stop at "In review".
