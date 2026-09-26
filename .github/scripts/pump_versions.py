@@ -279,7 +279,14 @@ def main() -> int:
         print(f"  {kind:7s} {name:30s} {old} -> {new}  ({LEVEL_NAMES[level]})")
     print(f"  root    marketplace                    {old_root} -> {new_root}  ({LEVEL_NAMES[root_level]})")
 
-    tags = [f"{name}-v{new}" for _, name, _, new, _ in bumps]
+    # A plugin that shares its name with a skill (e.g. project-governance) gets a
+    # "plugin-" prefix so the two units never produce the same tag.
+    def tag_for(kind: str, name: str, new: str) -> str:
+        if kind == "plugin" and (SKILLS_DIR / name).is_dir():
+            return f"plugin-{name}-v{new}"
+        return f"{name}-v{new}"
+
+    tags = [tag_for(kind, name, new) for kind, name, _, new, _ in bumps]
     emit_outputs(True, new_root, tags)
     return 0
 
